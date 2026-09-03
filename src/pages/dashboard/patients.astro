@@ -1,0 +1,15 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import PatientList from '../../components/features/patients/PatientList.astro';
+
+// Cache the shell of the dashboard page privately so switching tabs feels instant.
+Astro.response.headers.set('Cache-Control', 'private, max-age=30, must-revalidate');
+---
+
+<DashboardLayout title="Pacienți">
+  <div class="relative min-h-[100dvh]">
+    <section class="relative z-10 space-y-6">
+      <PatientList />
+    </section>
+  </div>
+</DashboardLayout>

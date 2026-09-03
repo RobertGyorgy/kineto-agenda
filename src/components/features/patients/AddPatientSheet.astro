@@ -1,0 +1,832 @@
+---
+// Patient Onboarding Bottom Sheet
+---
+
+<div 
+  id="add-patient-sheet" 
+  data-sheet-root
+  class="fixed inset-x-0 bottom-0 z-[100] bg-surface-card rounded-t-[2.5rem] p-5 pb-0 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] translate-y-full will-change-transform flex flex-col max-h-[92vh] overflow-hidden"
+>
+  <!-- Swipe handle -->
+  <div id="add-patient-drag-handle" class="w-12 h-1.5 bg-neutral-300 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+
+  <div class="flex-1 overflow-y-auto px-1 pt-1 pb-36 space-y-5">
+    <div class="flex items-center justify-between px-1">
+      <h3 id="patient-sheet-title" class="text-2xl font-extrabold tracking-tight text-black">Pacient nou</h3>
+    </div>
+
+        <form id="add-patient-form" class="space-y-4">
+      <input type="hidden" name="patientId" id="editPatientId" value="" />
+      
+      <!-- Error Message Banner -->
+      <div id="patient-error-banner" class="hidden rounded-2xl bg-rose-50 border border-rose-200 p-4 mb-4 items-start gap-3 shadow-sm transition-all">
+        <svg class="w-5 h-5 text-rose-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div class="flex-1">
+          <h4 class="text-sm font-black text-rose-800 uppercase tracking-wide mb-1">Atenție</h4>
+          <p id="patient-error-text" class="text-sm font-medium text-rose-700 leading-snug"></p>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- CARD 1: INFORMAȚII GENERALE & PLAN                     -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <div class="rounded-3xl bg-black/[0.03] p-4 space-y-4 border border-black/5">
+        <!-- Nume complet -->
+        <div>
+          <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Nume complet</label>
+          <input
+            type="text"
+            name="name"
+            id="patientName"
+            required
+            placeholder="ex: Alexandru Popa"
+            class="w-full px-5 py-3.5 rounded-2xl bg-white border border-black/10 text-base font-extrabold text-black placeholder:text-text-muted/60 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all shadow-sm"
+          />
+        </div>
+
+        <!-- Tip Plan & Locație (Segmented Controls) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Tip Ședință -->
+          <div>
+            <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Tip Ședință</label>
+            <input type="hidden" name="plan" id="patientPlan" value="Ședință unică" />
+            <div class="relative grid grid-cols-2 gap-1.5 p-1 bg-black/5 rounded-2xl">
+              <div id="plan-active-pill" class="absolute top-1 bottom-1 rounded-xl bg-brand-primary pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.34,1.36,0.64,1)]" style="opacity: 1; transform: translateX(0px);"></div>
+              <button 
+                type="button" 
+                data-plan="Abonament" 
+                class="relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate text-text-muted hover:text-black"
+              >
+                Abonament
+              </button>
+              <button 
+                type="button" 
+                data-plan="Ședință unică" 
+                class="relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate text-black"
+              >
+                Ședință unică
+              </button>
+            </div>
+          </div>
+
+          <!-- Locație -->
+          <div>
+            <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Locație</label>
+            <input type="hidden" name="location" id="patientLocation" value="Belaqva" />
+            <div class="relative grid grid-cols-2 gap-1.5 p-1 bg-black/5 rounded-2xl">
+              <div id="location-active-pill" class="absolute top-1 bottom-1 rounded-xl bg-brand-primary pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.34,1.36,0.64,1)]" style="opacity: 1; transform: translateX(0px);"></div>
+              <button 
+                type="button" 
+                data-location="Belaqva" 
+                class="relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate text-black"
+              >
+                Belaqva
+              </button>
+              <button 
+                type="button" 
+                data-location="Ghimbav" 
+                class="relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate text-text-muted hover:text-black"
+              >
+                Ghimbav
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- CARD 2: PREȚ & ȘEDINȚE                                 -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <div class="rounded-3xl bg-black/[0.03] p-4 space-y-4 border border-black/5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider text-center">Preț abonament</label>
+            <div class="flex items-center bg-white rounded-2xl overflow-hidden shadow-sm p-1 gap-1 transition-all">
+              <button type="button" tabindex="-1" class="stepper-btn px-4 py-2.5 text-black font-black bg-brand-primary hover:brightness-105 transition-all active:scale-95 text-lg rounded-xl" data-stepper-target="patientCost" data-stepper-step="-10" data-stepper-min="0">-</button>
+              <input
+                type="number"
+                name="cost"
+                id="patientCost"
+                placeholder="1500"
+                class="w-full py-2.5 text-center font-extrabold text-black text-base focus:outline-none border-none bg-transparent appearance-none m-0 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button type="button" tabindex="-1" class="stepper-btn px-4 py-2.5 text-black font-black bg-brand-primary hover:brightness-105 transition-all active:scale-95 text-lg rounded-xl" data-stepper-target="patientCost" data-stepper-step="10">+</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider text-center">Nr. ședințe</label>
+            <div class="flex items-center bg-white rounded-2xl overflow-hidden shadow-sm p-1 gap-1 transition-all">
+              <button type="button" tabindex="-1" class="stepper-btn px-4 py-2.5 text-black font-black bg-brand-primary hover:brightness-105 transition-all active:scale-95 text-lg rounded-xl" data-stepper-target="patientTotalSessions" data-stepper-step="-1" data-stepper-min="1">-</button>
+              <input
+                type="number"
+                name="totalSessions"
+                id="patientTotalSessions"
+                placeholder="10"
+                class="w-full py-2.5 text-center font-extrabold text-black text-base focus:outline-none border-none bg-transparent appearance-none m-0 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button type="button" tabindex="-1" class="stepper-btn px-4 py-2.5 text-black font-black bg-brand-primary hover:brightness-105 transition-all active:scale-95 text-lg rounded-xl" data-stepper-target="patientTotalSessions" data-stepper-step="1" data-stepper-min="1">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+      <!-- CARD 3: CONTACT & STATUS PLATĂ                         -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <div class="rounded-3xl bg-black/[0.03] p-4 space-y-4 border border-black/5">
+        <!-- Status Plată -->
+        <div>
+          <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Status plată</label>
+          <input type="hidden" name="paymentStatus" id="patientPaymentStatus" value="Neachitat" />
+          <div class="grid grid-cols-3 gap-1.5 p-1 bg-black/5 rounded-2xl">
+            <button 
+              type="button" 
+              data-payment="Neachitat" 
+              class="py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-rose-100 text-rose-700 shadow-sm"
+            >
+              Neachitat
+            </button>
+            <button 
+              type="button" 
+              data-payment="Plată parțială" 
+              class="py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate bg-transparent text-text-muted hover:text-black"
+            >
+              Parțial
+            </button>
+            <button 
+              type="button" 
+              data-payment="Achitat" 
+              class="py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate bg-transparent text-text-muted hover:text-black"
+            >
+              Achitat
+            </button>
+          </div>
+
+          <!-- Parțial sum input -->
+          <div id="partial-payment-box" class="hidden mt-3">
+            <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Sumă achitată acum (RON)</label>
+            <input
+              type="number"
+              name="partialAmount"
+              id="patientPartialAmount"
+              min="1"
+              placeholder="ex: 500"
+              class="w-full px-5 py-3 rounded-2xl bg-white border border-black/10 text-base font-extrabold text-black focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all shadow-sm"
+            />
+          </div>
+        </div>
+
+        <!-- Telefon -->
+        <div>
+          <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Telefon</label>
+          <div class="relative">
+            <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-black/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
+            <input
+              type="tel"
+              name="phone"
+              id="patientPhone"
+              placeholder="ex: 0740 123 456"
+              class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-black/10 text-base font-extrabold text-black placeholder:text-text-muted/60 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all shadow-sm"
+            />
+          </div>
+        </div>
+
+        <!-- Link dosar / Drive -->
+        <div>
+          <label class="block text-xs font-black text-black mb-1.5 uppercase tracking-wider">Link dosar / Drive</label>
+          <div class="relative">
+            <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-black/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+            </svg>
+            <input
+              type="url"
+              name="driveLink"
+              id="patientDriveLink"
+              placeholder="https://drive.google.com/..."
+              class="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-black/10 text-sm font-bold text-black placeholder:text-text-muted/60 focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all shadow-sm"
+            />
+          </div>
+        </div>
+      </div>
+        </form>
+  </div>
+
+  <!-- Sticky Bottom Actions -->
+  <div class="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-surface-card via-surface-card to-transparent pt-8 flex flex-col gap-2.5">
+    <button type="button" id="btn-renew-sticky" class="hidden w-full py-4 rounded-full bg-black text-white font-extrabold text-base uppercase tracking-wide shadow-md active:scale-95 transition-all cursor-pointer">
+      Reînnoiește Abonament
+    </button>
+    <button type="button" id="save-patient-btn" class="w-full py-4 rounded-full bg-brand-primary hover:brightness-105 text-black font-extrabold text-base shadow-md shadow-amber-500/15 active:scale-95 transition-all cursor-pointer">
+      Salvează
+    </button>
+  </div>
+</div>
+
+<script>
+  import { addPatient, updatePatient, addPayment } from '../../../lib/services/patientService';
+  import { getSettings } from '../../../lib/services/settingsService';
+  import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
+  import { isAllowedUrl } from '../../../utils/html';
+
+  class AddPatientSheetManager {
+    sheet: HTMLElement | null;
+    form: HTMLFormElement | null;
+    overlay: HTMLElement | null = null;
+    startY: number = 0;
+    currentY: number = 0;
+    startX: number = 0;
+    private dragEngaged: boolean = false;
+    private startTime: number = 0;
+    scrollAtTop: boolean = true;
+    currentPlanFilter: string = 'Abonament';
+
+    constructor() {
+      this.sheet = document.getElementById('add-patient-sheet');
+      this.form = document.getElementById('add-patient-form') as HTMLFormElement;
+      
+      this.createOverlay();
+      this.bindEvents();
+      // Set initial pill positions for default selections
+      this.updatePlanChips('Ședință unică');
+      this.updateLocationChips('Belaqva');
+    }
+
+    createOverlay() {
+      // Remove any existing overlay to prevent duplicates on SPA navigation
+      const existingOverlays = document.querySelectorAll('.patient-sheet-overlay');
+      existingOverlays.forEach(o => o.remove());
+
+      this.overlay = document.createElement('div');
+      this.overlay.className = 'fixed inset-0 bg-black/25 z-[90] opacity-0 pointer-events-none transition-opacity duration-300 patient-sheet-overlay';
+      document.body.appendChild(this.overlay);
+      this.overlay.addEventListener('click', () => this.close());
+    }
+
+    bindEvents() {
+      if (!this.sheet) return;
+      if (this.sheet.dataset.addPatientEventsBound === 'true') return;
+      this.sheet.dataset.addPatientEventsBound = 'true';
+
+      // Swipe-down to dismiss
+      this.sheet.addEventListener('touchstart', (e: any) => this.handleTouchStart(e), { passive: true });
+      this.sheet.addEventListener('touchmove', (e: any) => this.handleTouchMove(e), { passive: false });
+      this.sheet.addEventListener('touchend', () => this.handleTouchEnd());
+      this.sheet.addEventListener('touchcancel', () => this.cancelDrag());
+
+      // Dedicated drag handle close
+      const dragHandle = document.getElementById('add-patient-drag-handle');
+      if (dragHandle) {
+        let startY = 0;
+        let currentY = 0;
+        let dragging = false;
+        dragHandle.addEventListener('touchstart', (e: any) => {
+          e.stopPropagation();
+          startY = e.touches[0].clientY;
+          currentY = startY;
+          dragging = true;
+          if (this.sheet) this.sheet.style.transition = 'none';
+        }, { passive: false });
+        dragHandle.addEventListener('touchmove', (e: any) => {
+          e.stopPropagation();
+          if (!dragging) return;
+          currentY = e.touches[0].clientY;
+          const deltaY = currentY - startY;
+          if (deltaY > 0 && this.sheet) {
+            if (e.cancelable) e.preventDefault();
+            this.sheet.style.transform = `translateY(${deltaY}px)`;
+          }
+        }, { passive: false });
+        const onEnd = () => {
+          if (!dragging) return;
+          dragging = false;
+          const deltaY = currentY - startY;
+          if (this.sheet) {
+            this.sheet.style.transition = 'transform 400ms cubic-bezier(0.32, 0.72, 0, 1)';
+            if (deltaY > 80) {
+              this.close();
+            } else {
+              this.sheet.style.transform = 'translateY(0)';
+            }
+          }
+        };
+        dragHandle.addEventListener('touchend', onEnd);
+        dragHandle.addEventListener('touchcancel', onEnd);
+      }
+
+      // Bind Plan Chips
+      const planChips = document.querySelectorAll<HTMLButtonElement>('[data-plan]');
+      planChips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          e.preventDefault();
+          const planVal = chip.dataset.plan || 'Abonament';
+          if (this.form) {
+            (this.form.querySelector('[name="plan"]') as HTMLInputElement).value = planVal;
+          }
+          this.currentPlanFilter = planVal;
+          this.updatePlanChips(planVal);
+          this.applyPlanDefaults(planVal, true);
+        });
+      });
+
+      // Bind Location Chips
+      const locationChips = document.querySelectorAll<HTMLButtonElement>('[data-location]');
+      locationChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          const locVal = chip.dataset.location || 'Belaqva';
+          if (this.form) {
+            (this.form.querySelector('[name="location"]') as HTMLInputElement).value = locVal;
+          }
+          this.updateLocationChips(locVal);
+        });
+      });
+
+      // Bind Payment Chips
+      const paymentChips = document.querySelectorAll<HTMLButtonElement>('[data-payment]');
+      paymentChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          const paymentVal = chip.dataset.payment || 'Neachitat';
+          if (this.form) {
+            (this.form.querySelector('[name="paymentStatus"]') as HTMLInputElement).value = paymentVal;
+          }
+          this.updatePaymentChips(paymentVal);
+          this.togglePartialAmountBox(paymentVal);
+        });
+      });
+
+
+      // Bind stepper buttons (replaces inline onclick)
+      const stepperBtns = this.sheet.querySelectorAll<HTMLButtonElement>('.stepper-btn');
+      stepperBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.stepperTarget;
+          const step = Number(btn.dataset.stepperStep || '0');
+          const minAttr = btn.dataset.stepperMin;
+          const input = document.getElementById(targetId || '') as HTMLInputElement | null;
+          if (!input) return;
+          const current = Number(input.value || '0');
+          const next = current + step;
+          if (minAttr !== undefined && next < Number(minAttr)) return;
+          input.value = String(next);
+        });
+      });
+
+      const saveBtn = document.getElementById('save-patient-btn');
+      saveBtn?.addEventListener('click', () => this.savePatient(false));
+    }
+
+    private togglePartialAmountBox(paymentVal: string) {
+      const box = document.getElementById('partial-payment-box');
+      const input = document.getElementById('patientPartialAmount') as HTMLInputElement | null;
+      const isPartial = (paymentVal || '').toLowerCase().includes('parțial') || (paymentVal || '').toLowerCase().includes('partial') || (paymentVal || '').toLowerCase().includes('par');
+      if (box) {
+        if (isPartial) {
+          box.classList.remove('hidden');
+          setTimeout(() => input?.focus(), 100);
+        } else {
+          box.classList.add('hidden');
+          if (input) input.value = '';
+        }
+      }
+    }
+
+    updatePlanChips(selectedPlan: string) {
+      const clean = (s: string) => (s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const normSelected = clean(selectedPlan);
+
+      const planChips = document.querySelectorAll<HTMLButtonElement>('[data-plan]');
+      let selectedChip: HTMLButtonElement | null = null;
+      planChips.forEach(chip => {
+        const chipPlan = clean(chip.dataset.plan || '');
+        let isMatch = false;
+
+        if (normSelected.includes('abonament') || normSelected.includes('subscrip')) {
+          isMatch = chipPlan.includes('abonament');
+        } else if (normSelected.includes('sedinta') || normSelected.includes('unica') || normSelected.includes('one') || normSelected.includes('single')) {
+          isMatch = chipPlan.includes('sedinta') || chipPlan.includes('unica');
+        } else {
+          isMatch = chipPlan === normSelected;
+        }
+
+        if (isMatch) {
+          selectedChip = chip;
+          chip.className = 'relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate text-black';
+        } else {
+          chip.className = 'relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate text-text-muted hover:text-black';
+        }
+      });
+
+      this.movePillTo('plan-active-pill', selectedChip);
+    }
+
+    private movePillTo(pillId: string, target: HTMLElement | null) {
+      const pill = document.getElementById(pillId);
+      if (!pill || !target) return;
+      const parent = target.offsetParent as HTMLElement;
+      if (!parent) return;
+      pill.style.opacity = '1';
+      pill.style.width = `${target.offsetWidth}px`;
+      pill.style.transform = `translateX(${target.offsetLeft}px)`;
+    }
+
+    updateLocationChips(selectedLoc: string) {
+      const clean = (s: string) => (s || '').toLowerCase().trim();
+      const normSelected = clean(selectedLoc);
+
+      const locationChips = document.querySelectorAll<HTMLButtonElement>('[data-location]');
+      let selectedChip: HTMLButtonElement | null = null;
+      locationChips.forEach(chip => {
+        const chipLoc = clean(chip.dataset.location || '');
+        const isMatch = chipLoc === normSelected;
+
+        if (isMatch) {
+          selectedChip = chip;
+          chip.className = 'relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate text-black';
+        } else {
+          chip.className = 'relative z-10 py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate text-text-muted hover:text-black';
+        }
+      });
+
+      this.movePillTo('location-active-pill', selectedChip);
+    }
+
+    private isOneTimePlan(plan: string) {
+      const clean = (s: string) => (s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const p = clean(plan);
+      return p.includes('sedinta') || p.includes('unica') || p.includes('one') || p.includes('single');
+    }
+
+    applyPlanDefaults(plan: string, overwriteValues: boolean = true) {
+      const totalInput = this.form?.querySelector('[name="totalSessions"]') as HTMLInputElement | null;
+      const costInput = this.form?.querySelector('[name="cost"]') as HTMLInputElement | null;
+      if (!totalInput || !costInput) return;
+
+      // Extrage setările curente
+      let defaultPricePerSession = 150;
+      let defaultSessionsVal = 10;
+      try {
+        const cachedRaw = localStorage.getItem('kineto_settings_cache');
+        if (cachedRaw) {
+          const parsed = JSON.parse(cachedRaw);
+          if (parsed?.default_price) defaultPricePerSession = parsed.default_price;
+          if (parsed?.default_total_sessions) defaultSessionsVal = parsed.default_total_sessions;
+        }
+      } catch (_) {}
+
+      // Asigurăm că ambele câmpuri sunt întotdeauna editabile, conform cerinței
+      totalInput.readOnly = false;
+      totalInput.classList.remove('opacity-50', 'cursor-not-allowed');
+
+      if (overwriteValues) {
+        if (this.isOneTimePlan(plan)) {
+          totalInput.value = '1';
+          costInput.value = String(defaultPricePerSession);
+        } else {
+          totalInput.value = String(defaultSessionsVal);
+          costInput.value = String(defaultPricePerSession * defaultSessionsVal);
+        }
+      }
+    }
+
+    updatePaymentChips(selectedPayment: string) {
+      const clean = (s: string) => (s || '').toLowerCase().trim();
+      const normSelected = clean(selectedPayment);
+
+      const paymentChips = document.querySelectorAll<HTMLButtonElement>('[data-payment]');
+      paymentChips.forEach(chip => {
+        const chipPayment = clean(chip.dataset.payment || '');
+        let isMatch = false;
+
+        if (normSelected === 'neachitat' || normSelected === 'unpaid') {
+          isMatch = chipPayment === 'neachitat';
+        } else if (normSelected === 'achitat' || normSelected === 'paid') {
+          isMatch = chipPayment === 'achitat';
+        } else if (normSelected.includes('par') || normSelected.includes('partial')) {
+          isMatch = chipPayment.includes('par') || chipPayment.includes('partial');
+        } else {
+          isMatch = chipPayment === normSelected;
+        }
+
+        if (isMatch) {
+          if (normSelected === 'neachitat' || normSelected === 'unpaid') {
+            chip.className = 'py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-rose-100 text-rose-700 shadow-sm';
+          } else if (normSelected.includes('par') || normSelected.includes('partial')) {
+            chip.className = 'py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-amber-100 text-amber-900 shadow-sm';
+          } else {
+            chip.className = 'py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-emerald-100 text-emerald-800 shadow-sm';
+          }
+        } else {
+          chip.className = 'py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate bg-transparent text-text-muted hover:text-black';
+        }
+      });
+    }
+
+    async savePatient(bookSession: boolean) {
+      if (!this.form) return;
+      if (!this.form.checkValidity()) {
+        this.form.reportValidity();
+        return;
+      }
+
+      const saveBtn = document.getElementById('save-patient-btn') as HTMLButtonElement | null;
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Se salvează…'; }
+
+      const formData = new FormData(this.form);
+      const patientId = formData.get('patientId') as string;
+      const patientName = formData.get('name') as string;
+      const paymentStatus = formData.get('paymentStatus') as string;
+      const partialAmountRaw = formData.get('partialAmount') as string;
+      const partialAmount = partialAmountRaw ? Number(partialAmountRaw) : 0;
+      const isPartial = (paymentStatus || '').toLowerCase().includes('par') || (paymentStatus || '').toLowerCase().includes('partial');
+
+      if (isPartial && partialAmount <= 0) {
+        (window as any).showToast('Introdu suma plătită parțial pentru a continua.', 'warning');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvează'; }
+        return;
+      }
+
+      const phoneInput = (this.form?.querySelector('[name="phone"]') || document.getElementById('patientPhone')) as HTMLInputElement | null;
+      const phoneVal = phoneInput ? phoneInput.value.trim() : ((formData.get('phone') as string) || '').trim();
+
+      const driveInput = (this.form?.querySelector('[name="driveLink"]') || document.getElementById('patientDriveLink')) as HTMLInputElement | null;
+      const driveVal = driveInput ? driveInput.value.trim() : ((formData.get('driveLink') as string) || '').trim();
+
+      const nameInput = (this.form?.querySelector('[name="name"]') || document.getElementById('patientName')) as HTMLInputElement | null;
+      const nameVal = nameInput ? nameInput.value.trim() : (patientName || '').trim();
+
+      const payload = {
+        name: nameVal,
+        telefon: phoneVal,
+        plan: (formData.get('plan') as any) || 'Abonament',
+        locatie: (formData.get('location') as any) || 'Belaqva',
+        cost: formData.get('cost') ? Number(formData.get('cost')) : 0,
+        sedinte_total: formData.get('totalSessions') ? Number(formData.get('totalSessions')) : 10,
+        achitat: paymentStatus === 'Achitat' || paymentStatus === 'Paid fully' || paymentStatus === 'Paid',
+        drive_link: driveVal,
+      };
+
+      try {
+        let savedPatientId = patientId || '';
+        if (patientId) {
+          await updatePatient(patientId, payload);
+        } else {
+          savedPatientId = await addPatient(payload);
+        }
+
+        // Înregistrăm plata reală în tabela `plati` din baza de date
+        if (!patientId && savedPatientId) {
+          if (payload.achitat && payload.cost > 0) {
+            await addPayment(savedPatientId, payload.cost, true);
+          } else if (isPartial && partialAmount > 0) {
+            await addPayment(savedPatientId, partialAmount, false);
+          }
+        }
+
+        window.dispatchEvent(new CustomEvent('patientsUpdated'));
+        this.close();
+
+        if (bookSession) {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('openAddSession', {
+              detail: {
+                patientName: patientName,
+                showDateTime: true
+              }
+            }));
+          }, 300);
+        }
+      } catch (err: any) {
+        const msg = err.message || err.toString();
+        const errorBanner = document.getElementById('patient-error-banner');
+        const errorText = document.getElementById('patient-error-text');
+        
+        if (errorBanner && errorText) {
+          errorText.textContent = msg;
+          errorBanner.classList.remove('hidden');
+          errorBanner.classList.add('flex');
+          // Scroll formularul sus pentru a vedea eroarea
+          const scrollArea = this.sheet?.querySelector('.overflow-y-auto');
+          if (scrollArea) scrollArea.scrollTop = 0;
+        } else {
+          // Fallback
+          if (msg.includes('Există deja')) {
+            (window as any).showToast(msg, 'warning', 'Pacient existent');
+          } else {
+            (window as any).showToast('Eroare la salvarea pacientului: ' + msg, 'error');
+          }
+        }
+      } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvează'; }
+      }
+    }
+
+    handleOpenEvent(e: any) {
+        const detail = e.detail || {};
+        const isEdit = !!detail.isEdit;
+        const patient = detail.patient;
+
+        const titleEl = document.getElementById('patient-sheet-title');
+        const idInput = document.getElementById('editPatientId') as HTMLInputElement;
+
+        if (idInput) {
+          idInput.value = isEdit && patient ? patient.id : '';
+        }
+
+        if (titleEl) {
+          titleEl.textContent = isEdit ? 'Editează pacient' : 'Pacient nou';
+        }
+
+        if (isEdit && patient && this.form) {
+          let editPaymentStatus = 'Neachitat';
+          if (patient.achitat) {
+            editPaymentStatus = 'Achitat';
+          } else if ((patient.suma_incasata || 0) > 0) {
+            editPaymentStatus = 'Plată parțială';
+          }
+          const cost = patient.cost != null ? Number(patient.cost) : 0;
+          const sessions = patient.sedinte_total != null ? Number(patient.sedinte_total) : 0;
+
+          (this.form.querySelector('[name="name"]') as HTMLInputElement).value = patient.name || '';
+          (this.form.querySelector('[name="phone"]') as HTMLInputElement).value = patient.telefon || '';
+          (this.form.querySelector('[name="plan"]') as HTMLInputElement).value = patient.plan || 'Abonament';
+          (this.form.querySelector('[name="location"]') as HTMLInputElement).value = patient.locatie || 'Belaqva';
+          (this.form.querySelector('[name="cost"]') as HTMLInputElement).value = cost > 0 ? String(cost) : '';
+          (this.form.querySelector('[name="totalSessions"]') as HTMLInputElement).value = sessions > 0 ? String(sessions) : '';
+          (this.form.querySelector('[name="paymentStatus"]') as HTMLInputElement).value = editPaymentStatus;
+          (this.form.querySelector('[name="driveLink"]') as HTMLInputElement).value = patient.drive_link || '';
+          this.currentPlanFilter = patient.plan || 'Abonament';
+          this.updatePlanChips(patient.plan || 'Abonament');
+          this.updateLocationChips(patient.locatie || 'Belaqva');
+          this.updatePaymentChips(editPaymentStatus);
+          this.applyPlanDefaults(patient.plan || 'Abonament', false);
+          this.togglePartialAmountBox(editPaymentStatus);
+
+          // Show sticky renewal button in edit mode
+          const stickyRenewBtn = document.getElementById('btn-renew-sticky');
+          if (stickyRenewBtn) {
+            stickyRenewBtn.classList.remove('hidden');
+            stickyRenewBtn.onclick = () => {
+              (window as any).renewSubscription(patient.id, sessions || 10, patient.name);
+            };
+          }
+          
+          const errorBanner = document.getElementById('patient-error-banner');
+          if (errorBanner) {
+            errorBanner.classList.add('hidden');
+            errorBanner.classList.remove('flex');
+          }
+        } else if (this.form) {
+          this.form.reset();
+          (this.form.querySelector('[name="plan"]') as HTMLInputElement).value = 'Ședință unică';
+          this.currentPlanFilter = 'Ședință unică';
+          this.updatePlanChips('Ședință unică');
+          this.applyPlanDefaults('Ședință unică', true);
+          this.updateLocationChips('Belaqva');
+          this.updatePaymentChips('Neachitat');
+          this.togglePartialAmountBox('Neachitat');
+          const stickyRenewBtn = document.getElementById('btn-renew-sticky');
+          if (stickyRenewBtn) stickyRenewBtn.classList.add('hidden');
+          
+          const errorBanner = document.getElementById('patient-error-banner');
+          if (errorBanner) {
+            errorBanner.classList.add('hidden');
+            errorBanner.classList.remove('flex');
+          }
+        }
+
+        const partialAmountInput = document.getElementById('patientPartialAmount') as HTMLInputElement | null;
+        if (partialAmountInput) partialAmountInput.value = '';
+
+        this.open();
+    }
+
+    open() {
+      if (!this.sheet || !this.overlay) return;
+      // Ensure the sheet is in the layout before animating (prevents flash on load)
+      // Lock max-height in pixels to prevent jumping when iOS keyboard resizes the viewport
+      this.sheet.style.maxHeight = `${window.innerHeight * 0.9}px`;
+      this.sheet.dataset.open = 'true';
+      // Prevent the on-screen keyboard from opening automatically when the sheet slides up
+      if (document.activeElement && 'blur' in document.activeElement) {
+        (document.activeElement as HTMLElement).blur();
+      }
+      void this.sheet.offsetWidth;
+      this.sheet.classList.remove('translate-y-full');
+      this.overlay.classList.remove('opacity-0', 'pointer-events-none');
+      lockBodyScroll();
+    }
+
+    close() {
+      if (!this.sheet || !this.overlay) return;
+      this.sheet.style.transform = '';
+      this.sheet.classList.add('translate-y-full');
+      this.overlay.classList.add('opacity-0', 'pointer-events-none');
+      unlockBodyScroll();
+      setTimeout(() => {
+        if (this.sheet) this.sheet.dataset.open = 'false';
+        this.form?.reset();
+      }, 500);
+    }
+
+    handleTouchStart(e: TouchEvent) {
+      this.startTime = Date.now();
+      this.startY = e.touches[0].clientY;
+      this.currentY = this.startY;
+      this.startX = e.touches[0].clientX;
+      this.dragEngaged = false;
+      
+      // If the user is tapping on an input/button, prevent sheet dragging to avoid jumps
+      const target = e.target as HTMLElement;
+      const isInputTarget = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      const isButtonTarget = target && (target.tagName === 'BUTTON' || target.closest('button'));
+      if (isButtonTarget || isInputTarget) {
+        this.scrollAtTop = false;
+        return;
+      }
+
+      // Allow drag from the top 100px (header / drag handle) always,
+      // otherwise only when the scrollable form is at the top.
+      const touchY = e.touches[0].clientY;
+      const sheetRect = this.sheet?.getBoundingClientRect();
+      const isInHeader = sheetRect ? (touchY - sheetRect.top) < 120 : false;
+      const scrollArea = this.sheet?.querySelector('.overflow-y-auto');
+      this.scrollAtTop = isInHeader || !scrollArea || scrollArea.scrollTop <= 0;
+    }
+
+    handleTouchMove(e: TouchEvent) {
+      const y = e.touches[0].clientY;
+      const deltaY = y - this.startY;
+      const deltaX = e.touches[0].clientX - this.startX;
+
+      if (!this.dragEngaged) {
+        if (this.scrollAtTop && deltaY > 10 && deltaY > Math.abs(deltaX) * 1.5) {
+          this.dragEngaged = true;
+          if (this.sheet) this.sheet.style.transition = 'none';
+        } else {
+          return;
+        }
+      }
+
+      this.currentY = y;
+      if (deltaY > 0 && this.sheet) {
+        if (e.cancelable) e.preventDefault();
+        this.sheet.style.transform = `translateY(${deltaY}px)`;
+      }
+    }
+
+    handleTouchEnd() {
+      if (!this.sheet || !this.dragEngaged) {
+        this.dragEngaged = false;
+        return;
+      }
+      this.dragEngaged = false;
+      const deltaY = this.currentY - this.startY;
+      const timeElapsed = Date.now() - this.startTime;
+      const velocity = deltaY / timeElapsed;
+      this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+
+      // Close if dragged down more than 60px OR flicked fast
+      if (deltaY > 60 || (velocity > 0.4 && deltaY > 20)) {
+        this.close();
+      } else {
+        this.sheet.style.transform = 'translateY(0)';
+      }
+    }
+
+    cancelDrag() {
+      this.dragEngaged = false;
+      if (this.sheet) {
+        this.sheet.style.transition = 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)';
+        this.sheet.style.transform = 'translateY(0)';
+      }
+    }
+  }
+
+  function initPatientSheet() {
+    // Only bind the window event listener once globally
+    if (!(window as any)._patientSheetListenerBound) {
+      window.addEventListener('openAddPatient', (e: any) => {
+        if ((window as any).currentPatientSheetManager) {
+          (window as any).currentPatientSheetManager.handleOpenEvent(e);
+        }
+      });
+      (window as any)._patientSheetListenerBound = true;
+    }
+
+    // Recreate the manager on every page navigation so its overlay is always
+    // attached to the current document body (Astro's transition:persist moves
+    // the sheet but not the dynamically-created overlay).
+    if (document.getElementById('add-patient-sheet')) {
+      (window as any).currentPatientSheetManager = new AddPatientSheetManager();
+    }
+  }
+
+  document.addEventListener('astro:page-load', initPatientSheet);
+  document.addEventListener('DOMContentLoaded', initPatientSheet);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initPatientSheet();
+  }
+</script>

@@ -1,0 +1,15 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import DashboardOverview from '../../components/features/dashboard/DashboardOverview.astro';
+
+// Cache the shell of the dashboard page privately so switching tabs feels instant.
+Astro.response.headers.set('Cache-Control', 'private, max-age=30, must-revalidate');
+---
+
+<DashboardLayout title="Overview">
+  <div class="relative min-h-[100dvh]">
+    <section class="relative z-10 space-y-6">
+      <DashboardOverview />
+    </section>
+  </div>
+</DashboardLayout>

@@ -1,0 +1,1822 @@
+---
+// ReportsView.astro — Statistici Utile & Pragmatice
+---
+
+<div id="reports-content" class="space-y-7 relative">
+
+  <!-- Skeleton loader: shown only while fetching from DB -->
+  <div id="reports-skeleton" class="absolute inset-0 z-10 space-y-7 transition-opacity duration-200">
+    <div class="grid grid-cols-3 gap-3">
+      <div class="h-28 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+      <div class="h-28 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+      <div class="h-28 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="h-28 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+      <div class="h-28 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+    </div>
+    <div class="h-80 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+    <div class="h-40 rounded-[2.2rem] bg-black/10 animate-pulse"></div>
+  </div>
+
+  <div id="reports-data" class="space-y-7 hidden">
+
+    <!-- Antet perioadă + navigare pentru Statistici -->
+    <div class="flex items-center justify-between px-1 mb-3">
+      <div class="flex flex-col">
+        <h2 id="report-title" class="text-xl sm:text-2xl font-black text-text-main">Azi</h2>
+        <span id="report-date-range" class="text-sm font-bold text-text-muted">--</span>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" id="prev-report-btn" class="p-2 rounded-full bg-surface-card shadow-sm border border-transparent active:scale-95 transition-transform text-text-main hover:text-brand-secondary">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <button type="button" id="next-report-btn" class="p-2 rounded-full bg-surface-card shadow-sm border border-transparent active:scale-95 transition-transform text-text-main hover:text-brand-secondary">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Tabs Container -->
+    <div class="relative flex items-center space-x-2 bg-surface-card p-1.5 rounded-xl shadow-sm border border-transparent mb-6" id="stats-tabs-container">
+      <div id="stats-tabs-active-pill" class="absolute top-1/2 rounded-lg bg-text-main pointer-events-none z-0" style="left: 0; width: 0; height: calc(100% - 12px); opacity: 0; transform: translateY(-50%); transition: transform 450ms cubic-bezier(0.34, 1.36, 0.64, 1), width 450ms cubic-bezier(0.34, 1.36, 0.64, 1), opacity 300ms ease;"></div>
+      <button class="stats-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-inverse" data-tab="day">Zi</button>
+      <button class="stats-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="week">Săpt</button>
+      <button class="stats-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="month">Lun</button>
+      <button class="stats-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="quarter">Trim</button>
+      <button class="stats-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="year">An</button>
+    </div>
+
+
+
+    <!-- Unified Stats Cards Row -->
+    <div class="grid grid-cols-3 gap-3 mb-7">
+      <!-- Card 1: Ședințe -->
+      <button type="button" onclick="openSessionsDetails()" class="bg-surface-card rounded-tl-[2.2rem] rounded-br-[2.2rem] rounded-tr-md rounded-bl-md p-4 shadow-sm border border-transparent flex flex-col items-center justify-center text-center transition-all hover:border-transparent cursor-pointer active:scale-95 group">
+        <div class="flex items-baseline gap-1">
+          <span id="period-done" class="text-3xl sm:text-4xl font-black text-brand-secondary tracking-tight leading-none group-hover:text-brand-secondary transition-colors">0</span>
+          <span class="text-xl font-bold text-text-muted opacity-40">/</span>
+          <span id="period-total" class="text-3xl sm:text-4xl font-black text-text-main tracking-tight leading-none">0</span>
+        </div>
+        <div class="text-sm sm:text-base font-sans font-black text-text-main leading-tight mt-2 flex items-center gap-1">
+          <span>Ședințe</span>
+          <svg class="w-3.5 h-3.5 text-text-muted opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </button>
+      <!-- Card 2: Absent -->
+      <button type="button" onclick="openAbsentDetails()" class="bg-surface-card rounded-tr-[2.2rem] rounded-bl-[2.2rem] rounded-tl-md rounded-br-md p-4 shadow-sm border border-transparent flex flex-col items-center justify-center text-center transition-all hover:border-transparent cursor-pointer active:scale-95 group">
+        <div id="period-absent" class="text-3xl sm:text-4xl font-black text-brand-secondary tracking-tight leading-none group-hover:text-rose-500 transition-colors">0</div>
+        <div class="text-sm sm:text-base font-sans font-black text-text-main leading-tight mt-2 flex items-center gap-1 justify-center">
+          <span>Absent</span>
+          <svg class="w-3.5 h-3.5 text-text-muted opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </button>
+      <!-- Card 3: Încasat -->
+      <button type="button" id="period-income-card" class="bg-surface-card rounded-tl-[2.2rem] rounded-br-[2.2rem] rounded-tr-md rounded-bl-md p-4 shadow-sm border border-transparent flex flex-col items-center justify-center text-center transition-all hover:border-transparent cursor-pointer active:scale-95 group">
+        <div id="period-income" class="text-3xl sm:text-4xl font-black text-text-main tracking-tight leading-none group-hover:text-brand-secondary transition-colors">0</div>
+        <div class="text-sm sm:text-base font-sans font-black text-text-main leading-tight mt-2 flex items-center gap-1">
+          <span>RON</span>
+          <svg class="w-3.5 h-3.5 text-text-muted opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </button>
+    </div>
+
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 2. PLĂȚI RESTANTE (GLOBAL)                              -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section class="space-y-3">
+    <div class="flex items-baseline justify-between px-1 mb-3">
+      <h2 class="text-xl sm:text-2xl font-black text-text-main">Plăți restante</h2>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <button type="button" onclick="openUnpaidDetails()"
+        class="block bg-surface-card rounded-tl-[2.2rem] rounded-br-[2.2rem] rounded-tr-md rounded-bl-md p-4 shadow-sm border border-transparent flex flex-col items-center justify-center text-center transition-all hover:border-transparent group active:scale-[0.98]"
+      >
+        <div id="unpaid-count" class="text-3xl sm:text-4xl font-black text-brand-secondary tracking-tight leading-none">0</div>
+        <div class="text-sm sm:text-base font-sans font-black text-text-main leading-tight mt-2">Neachitați</div>
+      </button>
+      <button type="button" onclick="openUnpaidDetails()"
+        class="block bg-surface-card rounded-tr-[2.2rem] rounded-bl-[2.2rem] rounded-tl-md rounded-br-md p-4 shadow-sm border border-transparent flex flex-col items-center justify-center text-center transition-all hover:border-transparent group active:scale-[0.98]"
+      >
+        <div id="unpaid-total" class="text-3xl sm:text-4xl font-black text-text-main tracking-tight leading-none">0</div>
+        <div class="text-sm sm:text-base font-sans font-black text-text-main leading-tight mt-2">RON neachitați</div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- 3. EVOLUȚIE GRAFICĂ & TIMP ACTIV -->
+  <section class="space-y-4">
+    <!-- Chart Tabs Container -->
+    <div class="relative flex items-center space-x-2 bg-surface-card p-1.5 rounded-xl shadow-sm border border-transparent mb-4" id="chart-tabs-container">
+      <div id="chart-tabs-active-pill" class="absolute top-1/2 rounded-lg bg-text-main pointer-events-none z-0" style="left: 0; width: 0; height: calc(100% - 12px); opacity: 0; transform: translateY(-50%); transition: transform 450ms cubic-bezier(0.34, 1.36, 0.64, 1), width 450ms cubic-bezier(0.34, 1.36, 0.64, 1), opacity 300ms ease;"></div>
+      <button class="chart-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-inverse" data-tab="week">Săpt</button>
+      <button class="chart-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="month">Lun</button>
+      <button class="chart-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="quarter">Trim</button>
+      <button class="chart-tab-btn relative z-10 flex-1 py-1.5 rounded-lg text-sm font-black transition-all text-text-muted hover:text-text-main" data-tab="year">An</button>
+    </div>
+    <!-- Card Grafic Hașurat --><!-- Card Grafic Hașurat -->
+      <div class="bg-surface-card rounded-[2.2rem] p-5 shadow-sm border border-transparent space-y-4 relative overflow-hidden">
+        <div>
+          <div id="chart-subtitle" class="text-xs font-extrabold uppercase tracking-wider text-text-muted">Evoluție săptămânală</div>
+          <div id="chart-active-value" class="text-2xl sm:text-3xl font-black text-text-main mt-0.5 transition-all">
+            0 <span class="text-sm font-sans font-black text-text-main">RON</span>
+          </div>
+        </div>
+
+        <div class="flex items-stretch gap-1">
+          <!-- Graph + X-axis labels column -->
+          <div class="flex-1 flex flex-col min-w-0">
+            <!-- Graph area -->
+            <div class="relative flex-1 h-36" id="chart-container">
+              <svg viewBox="0 0 350 120" class="w-full h-full overflow-visible" preserveAspectRatio="none" id="reports-svg">
+                <defs>
+                  <pattern id="hatch-pattern" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="0" x2="0" y2="8" stroke="rgb(var(--color-text-main))" stroke-width="1.5" opacity="0.25" />
+                  </pattern>
+
+                  <linearGradient id="soft-bg-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgb(var(--color-brand-primary))" stop-opacity="0.2" />
+                    <stop offset="100%" stop-color="rgb(var(--color-surface-card))" stop-opacity="0.0" />
+                  </linearGradient>
+                </defs>
+
+                <path id="chart-path-gradient" fill="url(#soft-bg-gradient)" d="" />
+                <path id="chart-path-hatch" fill="url(#hatch-pattern)" d="" />
+                <path id="chart-path-stroke" fill="none" stroke="rgb(var(--color-text-main))" stroke-width="3" stroke-linecap="round" d="" />
+              </svg>
+
+              <div id="pink-dot-glow" class="absolute bg-brand-secondary rounded-full opacity-30 transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden" style="width: 20px; height: 20px; z-index: 20;"></div>
+              <div id="pink-dot" class="absolute bg-brand-secondary rounded-full border-[2.5px] border-white shadow-md transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none hidden" style="width: 14px; height: 14px; z-index: 21;"></div>
+            </div>
+
+            <!-- X-axis labels (aligned under SVG graph only) -->
+            <div class="flex items-center justify-between px-2 pt-2 text-xl sm:text-2xl font-black text-text-main" id="chart-x-labels">
+              <!-- Dynamic labels generated in JS -->
+            </div>
+          </div>
+
+          <!-- Y-axis anchors (to the right of graph, matching graph height) -->
+          <div class="hidden flex-col justify-between text-[10px] font-black text-text-muted text-left py-0.5 pb-8 w-auto shrink-0 pl-1" id="chart-y-labels">
+            <span id="chart-y-max">--</span>
+            <span id="chart-y-mid">--</span>
+            <span>0</span>
+          </div>
+        </div>
+
+        <!-- Total perioadă + Evoluție cap-coadă -->
+        <div class="space-y-3 pt-1">
+          <button type="button" id="chart-period-total-btn" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-surface-base hover:bg-surface-base/80 active:scale-[0.99] transition-all cursor-pointer group text-left">
+            <span class="text-sm font-black text-text-muted flex items-center gap-1.5">
+              <span>Total perioadă</span>
+              <svg class="w-3.5 h-3.5 text-text-muted opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </span>
+            <span id="chart-period-total" class="text-lg sm:text-xl font-black text-text-main group-hover:text-brand-secondary transition-colors">0 <span class="text-xs font-sans font-black text-text-main">RON</span></span>
+          </button>
+          <div id="chart-weekly-evolution" class="space-y-1.5">
+            <!-- Dynamic list generated in JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Timp Activ -->
+      <div class="bg-surface-card rounded-[2.2rem] p-5 shadow-sm border border-transparent space-y-3">
+        <div class="w-full h-3.5 bg-surface-base rounded-full overflow-hidden flex items-center p-0.5 border border-transparent">
+          <div id="week-progress-bar" class="h-full bg-brand-primary rounded-full transition-all duration-1000" style="width: 100%"></div>
+          <div id="week-cancel-bar" class="h-full bg-brand-secondary/80 rounded-full transition-all duration-1000 ml-0.5" style="width: 0%"></div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-3xl font-black text-text-main">
+            <span id="week-active-time">100%</span> <span class="text-base sm:text-lg font-black text-text-main">timp activ</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-2xl sm:text-3xl font-black text-text-main">
+            <span id="week-cancel-time">0%</span> <span class="text-base sm:text-lg font-black text-text-main">anulări</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+</div>
+
+<!-- Custom Date Picker Popup (floating, smaller, no native calendar UI) -->
+<div id="day-picker-sheet" data-sheet-root class="fixed inset-0 w-screen h-screen h-[100dvh] z-[9999] hidden">
+  <div id="day-picker-overlay" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+  <div id="day-picker-content" class="fixed w-[19rem] bg-surface-card rounded-[1.75rem] p-4 shadow-2xl pointer-events-auto transform scale-95 opacity-0 transition-all duration-200 ease-out origin-top-left border border-transparent z-[10000]">
+    <div class="flex items-center justify-between mb-3">
+      <button type="button" id="day-picker-prev-month" class="p-1.5 rounded-full bg-surface-base active:scale-95 transition-transform text-text-main hover:text-brand-secondary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+      </button>
+      <div id="day-picker-month-year" class="text-sm font-black text-text-main">--</div>
+      <button type="button" id="day-picker-next-month" class="p-1.5 rounded-full bg-surface-base active:scale-95 transition-transform text-text-main hover:text-brand-secondary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-7 gap-1 text-center mb-2">
+      <span class="text-[10px] font-bold text-text-muted">L</span>
+      <span class="text-[10px] font-bold text-text-muted">M</span>
+      <span class="text-[10px] font-bold text-text-muted">M</span>
+      <span class="text-[10px] font-bold text-text-muted">J</span>
+      <span class="text-[10px] font-bold text-text-muted">V</span>
+      <span class="text-[10px] font-bold text-text-muted">S</span>
+      <span class="text-[10px] font-bold text-text-muted">D</span>
+    </div>
+    <div id="day-picker-grid" class="grid grid-cols-7 gap-1">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+</div>
+
+
+<!-- Unpaid Details Popup Sheet -->
+<div id="unpaid-details-sheet" data-sheet-root class="fixed inset-0 z-[120] hidden">
+  <div id="unpaid-details-backdrop" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <div id="unpaid-details-content" style="will-change: transform;" class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-surface-card rounded-t-[2.5rem] p-6 pb-safe shadow-2xl pointer-events-auto transform translate-y-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-h-[85vh] flex flex-col border border-border-subtle/30 z-[10000]">
+    <div class="w-12 h-1.5 bg-text-main/15 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+    
+    <div class="flex items-start justify-between mb-4 shrink-0">
+      <div class="min-w-0 pr-2">
+        <h2 class="text-xl sm:text-2xl font-black text-text-main tracking-tight truncate">Plăți Restante</h2>
+      </div>
+    </div>
+
+    <!-- Summary Box -->
+    <div class="mb-4 bg-rose-50 rounded-2xl p-4 flex items-center justify-between shrink-0 border border-rose-100 shadow-2xs">
+      <div>
+        <span class="text-xs font-black uppercase tracking-wider text-rose-600">Total Datorat</span>
+        <div id="unpaid-details-total" class="text-2xl sm:text-3xl font-black text-rose-600 mt-0.5">0 <span class="text-sm font-sans font-black">RON</span></div>
+      </div>
+      <div id="unpaid-details-count-badge" class="px-3.5 py-1.5 rounded-xl bg-white text-rose-600 text-xs sm:text-sm font-black border border-rose-200">
+        0 pacienți
+      </div>
+    </div>
+
+    <!-- Debtors List -->
+    <div id="unpaid-details-list" class="space-y-2.5 overflow-y-auto flex-1 pr-1 overscroll-contain">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Income Details Popup Sheet (Card cu proveniența banilor) -->
+<div id="income-details-sheet" data-sheet-root class="fixed inset-0 z-[120] hidden">
+  <div id="income-details-backdrop" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <div id="income-details-content" style="will-change: transform;" class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-surface-card rounded-t-[2.5rem] p-6 pb-safe shadow-2xl pointer-events-auto transform translate-y-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-h-[85vh] flex flex-col border border-border-subtle/30 z-[10000]">
+    <div class="w-12 h-1.5 bg-text-main/15 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+    
+    <div class="flex items-start justify-between mb-4 shrink-0">
+      <div class="min-w-0 pr-2">
+        <h2 id="income-details-title" class="text-xl sm:text-2xl font-black text-text-main tracking-tight truncate">Încasări</h2>
+      </div>
+    </div>
+
+    <!-- Summary Box -->
+    <div class="mb-4 bg-surface-base rounded-2xl p-4 flex items-center justify-between shrink-0 border border-border-subtle/30 shadow-2xs">
+      <div>
+        <span class="text-xs font-black uppercase tracking-wider text-text-main">Total</span>
+        <div id="income-details-total" class="text-2xl sm:text-3xl font-black text-text-main mt-0.5">0 <span class="text-sm font-sans font-black text-text-main">RON</span></div>
+      </div>
+      <div id="income-details-count-badge" class="px-3.5 py-1.5 rounded-xl bg-black/5 text-text-main text-xs sm:text-sm font-black border border-black/10">
+        0 plăți
+      </div>
+    </div>
+
+    <!-- Payment List -->
+    <div id="income-details-list" class="space-y-2.5 overflow-y-auto flex-1 pr-1 overscroll-contain">
+      <!-- Generated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Sessions Details Popup Sheet -->
+<div id="sessions-details-sheet" data-sheet-root class="fixed inset-0 z-[120] hidden">
+  <div id="sessions-details-backdrop" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <div id="sessions-details-content" style="will-change: transform;" class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-surface-card rounded-t-[2.5rem] p-6 pb-safe shadow-2xl pointer-events-auto transform translate-y-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-h-[85vh] flex flex-col border border-border-subtle/30 z-[10000]">
+    <div class="w-12 h-1.5 bg-text-main/15 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+    
+    <div class="flex items-start justify-between mb-4 shrink-0">
+      <div class="min-w-0 pr-2">
+        <h2 id="sessions-details-title" class="text-xl sm:text-2xl font-black text-text-main tracking-tight truncate">Ședințe</h2>
+      </div>
+    </div>
+
+    <div class="mb-4 bg-brand-primary/10 rounded-2xl p-4 flex items-center justify-between shrink-0 border border-brand-primary/20 shadow-2xs">
+      <div>
+        <span class="text-xs font-black uppercase tracking-wider text-brand-primary">Total ședințe</span>
+        <div id="sessions-details-total" class="text-2xl sm:text-3xl font-black text-brand-primary mt-0.5">0</div>
+      </div>
+      <div id="sessions-details-count-badge" class="px-3.5 py-1.5 rounded-xl bg-white text-brand-primary text-xs sm:text-sm font-black border border-brand-primary/20">
+        0 finalizate
+      </div>
+    </div>
+
+    <div id="sessions-details-list" class="space-y-2.5 overflow-y-auto flex-1 pr-1 overscroll-contain">
+    </div>
+  </div>
+</div>
+
+<!-- Absent Details Popup Sheet -->
+<div id="absent-details-sheet" data-sheet-root class="fixed inset-0 z-[120] hidden">
+  <div id="absent-details-backdrop" class="fixed inset-0 bg-black/25 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <div id="absent-details-content" style="will-change: transform;" class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-surface-card rounded-t-[2.5rem] p-6 pb-safe shadow-2xl pointer-events-auto transform translate-y-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-h-[85vh] flex flex-col border border-border-subtle/30 z-[10000]">
+    <div class="w-12 h-1.5 bg-text-main/15 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+    
+    <div class="flex items-start justify-between mb-4 shrink-0">
+      <div class="min-w-0 pr-2">
+        <h2 id="absent-details-title" class="text-xl sm:text-2xl font-black text-text-main tracking-tight truncate">Absențe</h2>
+      </div>
+    </div>
+
+    <div class="mb-4 bg-rose-50 rounded-2xl p-4 flex items-center justify-between shrink-0 border border-rose-100 shadow-2xs">
+      <div>
+        <span class="text-xs font-black uppercase tracking-wider text-rose-600">Pacienți absenți</span>
+        <div id="absent-details-total" class="text-2xl sm:text-3xl font-black text-rose-600 mt-0.5">0</div>
+      </div>
+    </div>
+
+    <div id="absent-details-list" class="space-y-2.5 overflow-y-auto flex-1 pr-1 overscroll-contain">
+    </div>
+  </div>
+</div>
+
+<script>
+  import { getTodayStats, getWeekStats, getMonthStats, getQuarterStats, getYearStats, getUnpaidPatients, getDetailedPayments, getDetailedSessions, type DetailedPayment } from '../../../lib/services/reportsService';
+  import { toLocalISOString, formatDateRO } from '../../../utils/date';
+  import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
+
+  type TabType = 'all' | 'day' | 'week' | 'month' | 'quarter' | 'year';
+  let activeStatsTab: TabType = 'day';
+  let activeUnpaidTab: TabType = 'all';
+  let activeChartTab: TabType = 'week';
+  
+  let currentBaseDate = new Date();
+  let currentDayDate = new Date();
+  let lastStatData: any = null;
+
+  let isDayPickerOpen = false;
+  let isIncomeDetailsOpen = false;
+  let isUnpaidDetailsOpen = false;
+
+  function removeStaleSheets(exclude?: Element) {
+    document.querySelectorAll('#day-picker-sheet, #income-details-sheet, #unpaid-details-sheet, #sessions-details-sheet, #absent-details-sheet').forEach(el => {
+      if (el !== exclude && el.parentElement === document.body) {
+        el.remove();
+      }
+    });
+  }
+
+  // Curăță sheet-urile supraviețuitoare înainte de swap-ul Astro
+  document.addEventListener('astro:before-swap', () => {
+    removeStaleSheets();
+  });
+
+  // Escape key handler, bound once globally
+  function handleGlobalEscape(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      if (isUnpaidDetailsOpen) closeUnpaidDetails();
+      else if (isIncomeDetailsOpen) closeIncomeDetails();
+      else if (isDayPickerOpen) closeDayPicker();
+    }
+  }
+  if (!(window as any)._reportsEscapeBound) {
+    document.addEventListener('keydown', handleGlobalEscape);
+    (window as any)._reportsEscapeBound = true;
+  }
+  
+  
+  async function loadUnpaidStats() {
+    try {
+      const unpaid = await getUnpaidPatients();
+      const countEl = document.getElementById('unpaid-count');
+      const totalEl = document.getElementById('unpaid-total');
+      if (countEl) countEl.textContent = unpaid.count.toString();
+      if (totalEl) totalEl.textContent = unpaid.totalRON.toString();
+    } catch(e) {
+      console.error('Eroare loading unpaid stats', e);
+    }
+  }
+
+
+  function setupDayNavigation() {
+    const displayBtn = document.getElementById('report-title');
+    if (!displayBtn || displayBtn.dataset.reportsDayNavBound === 'true') return;
+    displayBtn.dataset.reportsDayNavBound = 'true';
+    displayBtn.addEventListener('click', () => openDayPicker());
+  }
+
+  // ── Custom day picker sheet (no native date UI) ───────────────
+  let pickerViewDate = new Date();
+
+  function openDayPicker() {
+    if (isDayPickerOpen) return;
+
+    pickerViewDate = new Date(currentDayDate.getFullYear(), currentDayDate.getMonth(), currentDayDate.getDate());
+    renderDayPicker();
+
+    const sheet = document.getElementById('day-picker-sheet');
+    const overlay = document.getElementById('day-picker-overlay');
+    const content = document.getElementById('day-picker-content');
+    const trigger = document.getElementById('today-date-display');
+    if (!sheet || !overlay || !content) return;
+
+    const rect = trigger?.getBoundingClientRect();
+    if (rect) {
+      const screenWidth = window.innerWidth;
+      const contentWidth = 304; // 19rem = 304px
+      let leftPos = rect.left;
+      if (leftPos + contentWidth > screenWidth - 16) {
+        leftPos = Math.max(16, screenWidth - contentWidth - 16);
+      }
+      content.style.left = `${leftPos}px`;
+      content.style.top = `${rect.bottom + 8}px`;
+    }
+
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+
+    isDayPickerOpen = true;
+    sheet.dataset.open = 'true';
+    sheet.classList.remove('hidden');
+    void sheet.offsetWidth;
+    
+    overlay.classList.remove('opacity-0', 'pointer-events-none');
+    overlay.classList.add('opacity-100', 'pointer-events-auto');
+
+    requestAnimationFrame(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    });
+
+    lockBodyScroll();
+  }
+
+  function closeDayPicker() {
+    const sheet = document.getElementById('day-picker-sheet');
+    const overlay = document.getElementById('day-picker-overlay');
+    const content = document.getElementById('day-picker-content');
+    if (!sheet || !overlay || !content) return;
+
+    content.style.transform = ''; // reset any inline drag transform
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    overlay.classList.remove('opacity-100', 'pointer-events-auto');
+    overlay.classList.add('opacity-0', 'pointer-events-none');
+
+    setTimeout(() => {
+      isDayPickerOpen = false;
+      sheet.dataset.open = 'false';
+      sheet.classList.add('hidden');
+      unlockBodyScroll();
+    }, 200);
+  }
+
+  function renderDayPicker() {
+    const grid = document.getElementById('day-picker-grid');
+    const monthYear = document.getElementById('day-picker-month-year');
+    if (!grid || !monthYear) return;
+
+    const year = pickerViewDate.getFullYear();
+    const month = pickerViewDate.getMonth();
+
+    const monthName = pickerViewDate.toLocaleDateString('ro-RO', { month: 'long' });
+    monthYear.textContent = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`;
+
+    grid.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    let startDayOfWeek = firstDay.getDay() - 1;
+    if (startDayOfWeek === -1) startDayOfWeek = 6;
+
+    for (let i = 0; i < startDayOfWeek; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'w-9 h-9';
+      grid.appendChild(empty);
+    }
+
+    const todayStr = toLocalISOString(new Date());
+    const selectedStr = toLocalISOString(currentDayDate);
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = day.toString();
+
+      const btnDate = new Date(year, month, day);
+      const btnDateStr = toLocalISOString(btnDate);
+
+      const isToday = btnDateStr === todayStr;
+      const isSelected = btnDateStr === selectedStr;
+
+      let btnClasses = 'w-9 h-9 rounded-xl text-xs font-black transition-all flex items-center justify-center ';
+      if (isSelected) {
+        btnClasses += 'bg-brand-primary text-text-inverse font-black shadow-sm';
+      } else if (isToday) {
+        btnClasses += 'border-2 border-brand-primary text-brand-primary font-black';
+      } else {
+        btnClasses += 'hover:bg-surface-base text-text-main';
+      }
+
+      btn.className = btnClasses;
+
+      btn.addEventListener('click', () => {
+        currentBaseDate = btnDate;
+        closeDayPicker();
+        loadReportStats();
+        loadChartStats();
+        loadUnpaidStats();
+      });
+
+      grid.appendChild(btn);
+    }
+  }
+
+  function setupDayPicker() {
+    const overlay = document.getElementById('day-picker-overlay');
+    const prevBtn = document.getElementById('day-picker-prev-month');
+    const nextBtn = document.getElementById('day-picker-next-month');
+    const content = document.getElementById('day-picker-content');
+
+    if (overlay && overlay.dataset.reportsPickerBound !== 'true') {
+      overlay.dataset.reportsPickerBound = 'true';
+      overlay.addEventListener('click', () => closeDayPicker());
+    }
+
+    if (prevBtn && prevBtn.dataset.reportsPickerBound !== 'true') {
+      prevBtn.dataset.reportsPickerBound = 'true';
+      prevBtn.addEventListener('click', () => {
+        pickerViewDate.setMonth(pickerViewDate.getMonth() - 1);
+        renderDayPicker();
+      });
+    }
+
+    if (nextBtn && nextBtn.dataset.reportsPickerBound !== 'true') {
+      nextBtn.dataset.reportsPickerBound = 'true';
+      nextBtn.addEventListener('click', () => {
+        pickerViewDate.setMonth(pickerViewDate.getMonth() + 1);
+        renderDayPicker();
+      });
+    }
+
+    if (content && content.dataset.reportsPickerBound !== 'true') {
+      content.dataset.reportsPickerBound = 'true';
+      let startY = 0;
+      let isDragging = false;
+
+      const resetDrag = () => {
+        isDragging = false;
+        content.style.transform = '';
+      };
+
+      content.addEventListener('touchstart', (e: any) => {
+        startY = e.touches[0].clientY;
+        isDragging = false;
+      }, { passive: true });
+      content.addEventListener('touchmove', (e: any) => {
+        const deltaY = e.touches[0].clientY - startY;
+        if (deltaY > 0) {
+          isDragging = true;
+          content.style.transition = 'none';
+          content.style.transform = `translateY(${deltaY}px) scale(1)`;
+        }
+      }, { passive: true });
+      content.addEventListener('touchend', (e: any) => {
+        const deltaY = (e.changedTouches[0].clientY || 0) - startY;
+        content.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+        if (isDragging && deltaY > 60) {
+          content.style.transform = '';
+          closeDayPicker();
+        } else {
+          content.style.transform = 'translateY(0) scale(1)';
+        }
+        isDragging = false;
+      });
+      content.addEventListener('touchcancel', resetDrag);
+    }
+  }
+
+  // ── INCOME DETAILS POPUP SHEET ────────────────────────────────
+  async function openIncomeDetails(title: string, subtitle: string, startDate: string, endDate?: string, expectedTotal?: number) {
+    const sheet = document.getElementById('income-details-sheet');
+    const backdrop = document.getElementById('income-details-backdrop');
+    const content = document.getElementById('income-details-content');
+    const titleEl = document.getElementById('income-details-title');
+    const subtitleEl = document.getElementById('income-details-subtitle');
+    const totalEl = document.getElementById('income-details-total');
+    const badgeEl = document.getElementById('income-details-count-badge');
+    const listEl = document.getElementById('income-details-list');
+
+    if (!sheet || !backdrop || !content || !listEl) return;
+
+    if (titleEl) titleEl.textContent = title;
+
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
+    if (totalEl) totalEl.innerHTML = `${expectedTotal !== undefined ? expectedTotal : '--'} <span class="text-sm font-sans font-black text-text-main">RON</span>`;
+    if (badgeEl) badgeEl.textContent = 'Se încarcă...';
+
+    listEl.innerHTML = `
+      <div class="h-[50vh] flex flex-col items-center justify-center space-y-4">
+        <div class="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-text-muted">Se caută plățile...</p>
+      </div>
+    `;
+
+    // Animate open
+    isIncomeDetailsOpen = true;
+    sheet.dataset.open = 'true';
+    sheet.classList.remove('hidden');
+    void sheet.offsetWidth;
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    content.classList.remove('translate-y-full');
+    content.classList.add('translate-y-0');
+    lockBodyScroll();
+
+    setupIncomeDetailsGestures();
+
+    // Wait for the slide-up transition to fully complete before starting database calls
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    try {
+      const payments = await getDetailedPayments(startDate, endDate);
+      const sumTotal = payments.reduce((acc, p) => acc + p.suma, 0);
+      const displayTotal = expectedTotal !== undefined && expectedTotal > 0 ? expectedTotal : sumTotal;
+
+      if (totalEl) totalEl.innerHTML = `${displayTotal} <span class="text-sm font-sans font-black text-text-main">RON</span>`;
+      if (badgeEl) badgeEl.textContent = `${payments.length} ${payments.length === 1 ? 'încasare' : 'încasări'}`;
+
+      if (payments.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-8 px-4 text-center rounded-2xl bg-surface-base/50 border border-dashed border-border-subtle/50 flex flex-col items-center justify-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-surface-card flex items-center justify-center text-text-muted shadow-2xs">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="text-sm font-black text-text-main">Nicio încasare înregistrată</p>
+            <p class="text-xs font-bold text-text-muted">Pentru această perioadă suma totală este 0 RON.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = payments.map(p => {
+        const nameParts = p.numeComplet.split(' ').filter(Boolean);
+        const initials = nameParts.length >= 2 
+          ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase() 
+          : (nameParts[0]?.slice(0, 2).toUpperCase() || 'PA');
+
+        // Belaqva = yellow (brand-primary), Ghimbav = pink (brand-secondary)
+        const loc = (p.locatie || '').toLowerCase();
+        const isGhimbav = loc === 'ghimbav';
+        const avatarBg = isGhimbav ? 'bg-brand-secondary' : 'bg-brand-primary';
+        const avatarText = isGhimbav ? 'text-white' : 'text-black';
+
+        // Plan in Romanian
+        const planRO = p.plan === 'Subscription' ? 'Abonament' : (p.plan === 'One Time' ? 'Ședință' : (p.plan || ''));
+
+        // Metoda badge (uppercase, styled by location)
+        // Date in DD.MM.YYYY Romanian format
+        let dateRO = p.dataPlatii || '';
+        if (dateRO && dateRO.includes('-')) {
+          const parts = dateRO.split('-');
+          if (parts.length === 3) dateRO = `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+
+        return `
+          <div class="p-3.5 rounded-2xl bg-surface-base border border-border-subtle/30 flex items-center justify-between gap-3 shadow-2xs hover:border-brand-primary/30 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl ${avatarBg} ${avatarText} flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                ${initials}
+              </div>
+              <div class="min-w-0">
+                <div class="font-black text-text-main text-sm sm:text-base truncate">${p.numeComplet}</div>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-base sm:text-lg font-black text-emerald-600">+${p.suma} RON</div>
+              <div class="text-xs font-bold text-text-main">${dateRO}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+    } catch (err) {
+      console.error('Eroare încărcare detalii plăți:', err);
+      listEl.innerHTML = `
+        <div class="p-4 rounded-2xl bg-rose-50 text-rose-700 text-xs font-bold text-center">
+          Eroare la încărcarea plăților. Te rugăm să încerci din nou.
+        </div>
+      `;
+    }
+  }
+
+  function closeIncomeDetails() {
+    const sheet = document.getElementById('income-details-sheet');
+    const backdrop = document.getElementById('income-details-backdrop');
+    const content = document.getElementById('income-details-content');
+
+    if (!sheet || !backdrop || !content) return;
+
+    isIncomeDetailsOpen = false;
+    sheet.dataset.open = 'false';
+    content.style.transform = ''; // reset any inline drag transform
+    content.classList.remove('translate-y-0');
+    content.classList.add('translate-y-full');
+    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    
+    setTimeout(() => {
+      sheet.classList.add('hidden');
+      unlockBodyScroll();
+    }, 300);
+  }
+
+  function setupIncomeDetailsGestures() {
+    const sheet = document.getElementById('income-details-sheet');
+    const backdrop = document.getElementById('income-details-backdrop');
+    const content = document.getElementById('income-details-content');
+
+    if (!sheet || !backdrop || !content) return;
+
+    if (sheet.dataset.gesturesBound === 'true') return;
+    sheet.dataset.gesturesBound = 'true';
+
+    backdrop.addEventListener('click', closeIncomeDetails);
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    const resetDrag = () => {
+      isDragging = false;
+      content.style.transform = '';
+    };
+
+    content.addEventListener('touchstart', (e: TouchEvent) => {
+      if (content.scrollTop === 0) {
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+      if (deltaY > 0) {
+        content.style.transform = `translateY(${deltaY}px)`;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      const deltaY = currentY - startY;
+      content.style.transform = '';
+      if (deltaY > 80) {
+        closeIncomeDetails();
+      }
+    });
+
+    content.addEventListener('touchcancel', resetDrag);
+  }
+
+  
+  function setupTopIncomeCard() {
+    const periodIncomeCard = document.getElementById('period-income-card');
+    if (periodIncomeCard && periodIncomeCard.dataset.reportsIncomeBound !== 'true') {
+      periodIncomeCard.dataset.reportsIncomeBound = 'true';
+      periodIncomeCard.addEventListener('click', () => {
+        const titleEl = document.getElementById('report-title')?.textContent || 'Perioadă';
+        const dateRangeEl = document.getElementById('report-date-range')?.textContent || '';
+        
+        let startD = '';
+        let endD = '';
+        let inc = 0;
+        
+        if (activeStatsTab === 'day') {
+           const dateStr = toLocalISOString(currentBaseDate);
+           startD = dateStr;
+           endD = dateStr;
+           inc = parseInt(document.getElementById('period-income')?.textContent || '0', 10);
+        } else if (lastStatData) {
+           startD = lastStatData.startStr;
+           endD = lastStatData.endStr;
+           inc = lastStatData.venit;
+        }
+        
+        if (startD) {
+          openIncomeDetails(`Încasări ${titleEl}`, dateRangeEl, startD, endD, inc);
+        }
+      });
+    }
+  }
+
+
+  
+  async function loadReportStats() {
+    try {
+      const dateStr = toLocalISOString(currentBaseDate);
+      const titleEl = document.getElementById('report-title');
+      const dateRangeEl = document.getElementById('report-date-range');
+
+      let statData: any;
+
+      if (activeStatsTab === 'day') {
+        if (titleEl) {
+          const d = currentBaseDate;
+          const dayNameCap = d.toLocaleDateString('ro-RO', { weekday: 'long' }).charAt(0).toUpperCase() + d.toLocaleDateString('ro-RO', { weekday: 'long' }).slice(1);
+          titleEl.textContent = dayNameCap;
+        }
+        if (dateRangeEl) {
+          const d = currentBaseDate;
+          const dayNum = d.getDate().toString().padStart(2, '0');
+          const monthNameCap = d.toLocaleDateString('ro-RO', { month: 'long' }).charAt(0).toUpperCase() + d.toLocaleDateString('ro-RO', { month: 'long' }).slice(1);
+          dateRangeEl.textContent = `${dayNum} ${monthNameCap}`;
+        }
+        statData = await getTodayStats(dateStr);
+        // Normalize today stats to match period stats shape for UI
+        statData.total = statData.sedinte_total;
+        statData.venit = statData.venit_azi;
+        
+      } else {
+        if (activeStatsTab === 'week') {
+          if (titleEl) titleEl.textContent = 'Săptămânal';
+          statData = await getWeekStats(dateStr);
+          if (dateRangeEl) dateRangeEl.textContent = `${formatDateRO(new Date(statData.startStr))} - ${formatDateRO(new Date(statData.endStr))}`;
+        } else if (activeStatsTab === 'month') {
+          if (titleEl) titleEl.textContent = 'Lunar';
+          statData = await getMonthStats(dateStr);
+          const monthName = currentBaseDate.toLocaleDateString('ro-RO', { month: 'long' });
+          if (dateRangeEl) dateRangeEl.textContent = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${currentBaseDate.getFullYear()}`;
+        } else if (activeStatsTab === 'quarter') {
+          if (titleEl) titleEl.textContent = 'Trimestrial';
+          statData = await getQuarterStats(dateStr);
+          if (dateRangeEl) dateRangeEl.textContent = `${formatDateRO(new Date(statData.startStr), true)} - ${formatDateRO(new Date(statData.endStr), true)}`;
+        } else if (activeStatsTab === 'year') {
+          if (titleEl) titleEl.textContent = 'Anual';
+          statData = await getYearStats(dateStr);
+          if (dateRangeEl) dateRangeEl.textContent = `${currentBaseDate.getFullYear()}`;
+        }
+      }
+
+      lastStatData = statData;
+
+      if (statData) {
+        const totalPast = statData.finalizate + statData.absente;
+
+        const pDone = document.getElementById('period-done');
+        const pTotal = document.getElementById('period-total');
+        const pAbsent = document.getElementById('period-absent');
+        const pIncome = document.getElementById('period-income');
+
+        if (pDone) pDone.textContent = statData.finalizate.toString();
+        if (pTotal) pTotal.textContent = statData.total.toString();
+        if (pAbsent) pAbsent.textContent = statData.absente.toString();
+        if (pIncome) pIncome.textContent = statData.venit.toString();
+        const prezenta = totalPast > 0 ? Math.round((statData.finalizate / totalPast) * 100) : 0;
+        const anulari = totalPast > 0 ? Math.round((statData.absente / totalPast) * 100) : 0;
+
+        const wAT = document.getElementById('week-active-time');
+        const wCT = document.getElementById('week-cancel-time');
+        const wPB = document.getElementById('week-progress-bar');
+        const wCB = document.getElementById('week-cancel-bar');
+        if(wAT) wAT.textContent = `${prezenta}%`;
+        if(wCT) wCT.textContent = `${anulari}%`;
+        if(wPB) wPB.style.width = `${prezenta}%`;
+        if(wCB) wCB.style.width = `${anulari}%`;
+      }
+    } catch (e) {
+      console.error('Error loading report stats:', e);
+    }
+  }
+
+  async function loadChartStats() {
+    try {
+      const dateStr = toLocalISOString(currentBaseDate);
+      const subtitleEl = document.getElementById('chart-subtitle');
+      let chartStatData: any;
+      
+      if (activeChartTab === 'week') {
+        if (subtitleEl) subtitleEl.textContent = 'Evoluție săptămânală';
+        chartStatData = await getWeekStats(dateStr);
+      } else if (activeChartTab === 'month') {
+        if (subtitleEl) subtitleEl.textContent = 'Evoluție lunară';
+        chartStatData = await getMonthStats(dateStr);
+      } else if (activeChartTab === 'quarter') {
+        if (subtitleEl) subtitleEl.textContent = 'Evoluție trimestrială';
+        chartStatData = await getQuarterStats(dateStr);
+      } else if (activeChartTab === 'year') {
+        if (subtitleEl) subtitleEl.textContent = 'Evoluție anuală';
+        chartStatData = await getYearStats(dateStr);
+      }
+
+      if (chartStatData) {
+        // Total perioadă
+        const periodTotalEl = document.getElementById('chart-period-total');
+        if (periodTotalEl) {
+          const total = chartStatData.venit || 0;
+          periodTotalEl.innerHTML = `${Math.round(total)} <span class="text-xs font-sans font-black text-text-main">RON</span>`;
+        }
+
+        // Load chart if data exists
+        if (chartStatData.chartData) {
+          initInteractiveHatchChart(chartStatData.chartData, chartStatData.startStr, activeChartTab, chartStatData);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading chart stats:', e);
+    }
+  }
+
+
+  function initInteractiveHatchChart(chartData: any[], startStr: string, periodType: TabType, statData?: any) {
+    const container = document.getElementById('chart-x-labels');
+    if (!container) return;
+    
+    // Create label buttons dynamically
+    container.innerHTML = '';
+    chartData.forEach((item, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const textSize = chartData.length <= 7 ? 'text-xl sm:text-2xl' : 'text-sm sm:text-base';
+      btn.className = `day-btn hover:text-brand-secondary transition-colors cursor-pointer py-1 px-2 text-text-muted ${textSize} font-black`;
+      btn.textContent = item.label;
+      btn.dataset.idx = idx.toString();
+      container.appendChild(btn);
+    });
+
+    const svg = document.getElementById('reports-svg');
+    const dayBtns = document.querySelectorAll('.day-btn');
+    const dot = document.getElementById('pink-dot');
+    const dotGlow = document.getElementById('pink-dot-glow');
+    const valueDisplay = document.getElementById('chart-active-value');
+    const pathGradient = document.getElementById('chart-path-gradient');
+    const pathHatch = document.getElementById('chart-path-hatch');
+    const pathStroke = document.getElementById('chart-path-stroke');
+    
+    if (!svg || !dot || !dotGlow || !valueDisplay || dayBtns.length === 0) return;
+
+    const chartVals = chartData.map(d => d.val);
+    const rawMax = Math.max(...chartVals, 100);
+
+    function niceAnchor(max: number) {
+      if (max <= 0) return 100;
+      if (max <= 10) return 10;
+      if (max <= 100) return Math.ceil(max / 10) * 10;
+      if (max <= 1000) return Math.ceil(max / 100) * 100;
+      return Math.ceil(max / 500) * 500;
+    }
+
+    const yMax = niceAnchor(rawMax);
+    const yMid = Math.round(yMax / 2);
+    const yAxisMax = document.getElementById('chart-y-max');
+    const yAxisMid = document.getElementById('chart-y-mid');
+    if (yAxisMax) yAxisMax.textContent = `${yMax}`;
+    if (yAxisMid) yAxisMid.textContent = `${yMid}`;
+
+    const maxVal = yMax;
+    const minY = 115;
+    const maxY = 15;
+    const pointsCount = chartVals.length;
+    const step = pointsCount > 1 ? (320 / (pointsCount - 1)) : 320;
+    const xCoords = Array.from({length: pointsCount}, (_, i) => 15 + i * step);
+
+    const points = chartVals.map((val, i) => {
+      const y = val === 0 ? minY : (minY - (val / maxVal) * (minY - maxY));
+      return { x: xCoords[i], y, val };
+    });
+
+    if (valueDisplay) {
+      valueDisplay.innerHTML = `${statData ? statData.venit || 0 : 0} <span class="text-sm font-sans font-black text-text-main">RON</span>`;
+    }
+
+    // Draw the line only up to today (or the last known day for past periods)
+    const todayStr = toLocalISOString(new Date());
+    let todayIdx = -1;
+    for (let i = chartData.length - 1; i >= 0; i--) {
+      const item = chartData[i];
+      if (item && item.dateStr && item.dateStr <= todayStr) {
+        todayIdx = i;
+        break;
+      }
+    }
+    if (todayIdx === -1) todayIdx = chartData.length - 1;
+
+    const visiblePoints = points.slice(0, todayIdx + 1);
+    const isAllZero = chartVals.every(v => v === 0);
+
+    if (isAllZero || visiblePoints.length === 0) {
+      if (pathStroke) pathStroke.setAttribute('d', '');
+      if (pathGradient) pathGradient.setAttribute('d', '');
+      if (pathHatch) pathHatch.setAttribute('d', '');
+    } else if (visiblePoints.length === 1) {
+      const p = visiblePoints[0];
+      const strokePath = `M 0,${p.y} L ${p.x},${p.y}`;
+      const fillPath = `M 0,115 L 0,${p.y} L ${p.x},${p.y} L ${p.x},115 Z`;
+      
+      if (pathStroke) pathStroke.setAttribute('d', strokePath);
+      if (pathGradient) pathGradient.setAttribute('d', fillPath);
+      if (pathHatch) pathHatch.setAttribute('d', fillPath);
+    } else {
+      let strokePath = `M ${visiblePoints[0].x},${visiblePoints[0].y}`;
+      for(let i=0; i<visiblePoints.length - 1; i++) {
+        const p1 = visiblePoints[i];
+        const p2 = visiblePoints[i+1];
+        const cx1 = p1.x + (p2.x - p1.x) / 2;
+        const cy1 = p1.y;
+        const cx2 = p1.x + (p2.x - p1.x) / 2;
+        const cy2 = p2.y;
+        strokePath += ` C ${cx1},${cy1} ${cx2},${cy2} ${p2.x},${p2.y}`;
+      }
+      const fillPath = strokePath + ` L ${visiblePoints[visiblePoints.length - 1].x},115 L ${visiblePoints[0].x},115 Z`;
+      
+      if (pathStroke) pathStroke.setAttribute('d', strokePath);
+      if (pathGradient) pathGradient.setAttribute('d', fillPath);
+      if (pathHatch) pathHatch.setAttribute('d', fillPath);
+    }
+
+    const dayCoords = points.map(p => ({
+      cx: p.x,
+      cy: p.y,
+      left: `${(p.x / 350) * 100}%`,
+      top: `${(p.y / 120) * 100}%`,
+      val: `${p.val} <span class="text-sm font-sans font-black text-text-main">RON</span>`,
+      valNumber: p.val
+    }));
+
+    const evolutionContainer = document.getElementById('chart-weekly-evolution');
+    function renderWeeklyEvolution(highlightIdx: number = -1) {
+      if (!evolutionContainer) return;
+      const total = chartData.reduce((s, d) => s + d.val, 0);
+      evolutionContainer.innerHTML = chartData.map((item, idx) => {
+        const isActive = idx === highlightIdx;
+        const pct = total > 0 ? Math.round((item.val / total) * 100) : 0;
+        return `
+          <button type="button" class="weekly-evolution-row w-full flex items-center justify-between py-2 px-3 rounded-2xl ${isActive ? 'bg-surface-base shadow-2xs font-bold' : 'hover:bg-surface-base/60'} transition-all cursor-pointer group text-left active:scale-[0.99]" data-idx="${idx}">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <span class="text-xs font-black uppercase tracking-wider text-text-muted w-8 shrink-0">${item.label}</span>
+              <div class="w-20 sm:w-24 h-2 bg-surface-card rounded-full overflow-hidden shrink-0 border border-border-subtle/30">
+                <div class="h-full rounded-full ${isActive ? 'bg-brand-secondary' : 'bg-text-main/30'}" style="width: ${Math.max(4, pct)}%"></div>
+              </div>
+              <span class="text-xs font-bold text-text-muted truncate hidden sm:inline-block">${item.fullTitle || ''}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 pl-2">
+              <span class="text-sm font-black ${isActive ? 'text-brand-secondary' : 'text-text-main'} group-hover:text-brand-secondary transition-colors">${item.val} RON</span>
+              <svg class="w-3.5 h-3.5 text-text-muted/60 group-hover:text-brand-secondary group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      // Add click handlers on evolution rows to open detailed popup
+      evolutionContainer.querySelectorAll('.weekly-evolution-row').forEach(rowBtn => {
+        rowBtn.addEventListener('click', () => {
+          const idx = parseInt((rowBtn as HTMLElement).dataset.idx || '-1', 10);
+          if (idx >= 0 && chartData[idx]) {
+            const item = chartData[idx];
+            // Also select on graph
+            const coord = dayCoords[idx];
+            if (coord) {
+              dot.style.left = coord.left;
+              dot.style.top = coord.top;
+              dotGlow.style.left = coord.left;
+              dotGlow.style.top = coord.top;
+              dot.classList.remove('hidden');
+              dotGlow.classList.remove('hidden');
+              valueDisplay.innerHTML = coord.val;
+            }
+
+            document.querySelectorAll('.day-btn').forEach(b => {
+              b.classList.remove('text-brand-secondary', 'font-black');
+              b.classList.add('text-text-muted');
+            });
+            const correspondingBtn = document.querySelector(`.day-btn[data-idx="${idx}"]`);
+            if (correspondingBtn) {
+              correspondingBtn.classList.remove('text-text-muted');
+              correspondingBtn.classList.add('text-brand-secondary', 'font-black');
+            }
+
+            renderWeeklyEvolution(idx);
+            openIncomeDetails(item.fullTitle || `Încasări ${item.label}`, `${item.val} RON colectați`, item.startDateStr || item.dateStr, item.endDateStr || item.dateStr, item.val);
+          }
+        });
+      });
+    }
+    renderWeeklyEvolution();
+
+    dayBtns.forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        const coord = dayCoords[idx];
+        if (coord) {
+          dot.style.left = coord.left;
+          dot.style.top = coord.top;
+          dotGlow.style.left = coord.left;
+          dotGlow.style.top = coord.top;
+
+          dot.classList.remove('hidden');
+          dotGlow.classList.remove('hidden');
+
+          valueDisplay.innerHTML = coord.val;
+
+          document.querySelectorAll('.day-btn').forEach(b => {
+            b.classList.remove('text-brand-secondary', 'font-black');
+            b.classList.add('text-text-muted');
+          });
+          btn.classList.remove('text-text-muted');
+          btn.classList.add('text-brand-secondary', 'font-black');
+
+          renderWeeklyEvolution(idx);
+        }
+      });
+    });
+
+    const activeBtnIdx = todayIdx;
+    const newDayBtns = document.querySelectorAll('.day-btn');
+    if (activeBtnIdx >= 0 && newDayBtns[activeBtnIdx]) {
+      (newDayBtns[activeBtnIdx] as HTMLElement).dispatchEvent(new Event('click'));
+    } else {
+      if (dot) dot.classList.add('hidden');
+      if (dotGlow) dotGlow.classList.add('hidden');
+    }
+  }
+
+  function setupTabGroup(containerId: string, pillId: string, btnClass: string, getState: () => TabType, setState: (tab: TabType) => void, onUpdate: () => void) {
+    const tabsContainer = document.getElementById(containerId);
+    if (!tabsContainer || tabsContainer.dataset.reportsTabsBound === 'true') return;
+    tabsContainer.dataset.reportsTabsBound = 'true';
+
+    const tabBtns = tabsContainer.querySelectorAll('.' + btnClass);
+    const activePill = document.getElementById(pillId);
+
+    function updatePill(btn: HTMLElement) {
+      if (!activePill || !tabsContainer) return;
+      const btnRect = btn.getBoundingClientRect();
+      const containerRect = tabsContainer.getBoundingClientRect();
+      const left = btnRect.left - containerRect.left;
+      const width = btnRect.width;
+
+      activePill.style.transform = `translate(${left}px, -50%)`;
+      activePill.style.width = `${width}px`;
+      activePill.style.opacity = '1';
+    }
+
+    function updateActivePill() {
+      const activeBtn = tabsContainer?.querySelector(`.${btnClass}[data-tab="${getState()}"]`) as HTMLElement;
+      if (activeBtn) updatePill(activeBtn);
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const newTab = target.getAttribute('data-tab') as TabType;
+        if (newTab && newTab !== getState()) {
+          setState(newTab);
+
+          tabBtns.forEach(b => {
+            b.classList.remove('text-text-inverse');
+            b.classList.add('text-text-muted', 'hover:text-text-main');
+          });
+          target.classList.remove('text-text-muted', 'hover:text-text-main');
+          target.classList.add('text-text-inverse');
+
+          updatePill(target);
+          onUpdate();
+        } else {
+          updatePill(target);
+          onUpdate();
+        }
+      });
+    });
+
+    [0, 50, 150, 300, 600].forEach(delay => {
+      setTimeout(updateActivePill, delay);
+    });
+
+    if ('ResizeObserver' in window) {
+      const ro = new ResizeObserver(() => updateActivePill());
+      ro.observe(tabsContainer);
+    }
+    
+    window.addEventListener('resize', updateActivePill);
+  }
+
+  function setupTabs() {
+    setupTabGroup('stats-tabs-container', 'stats-tabs-active-pill', 'stats-tab-btn', () => activeStatsTab, (v) => activeStatsTab = v, loadReportStats);
+    setupTabGroup('chart-tabs-container', 'chart-tabs-active-pill', 'chart-tab-btn', () => activeChartTab, (v) => activeChartTab = v, loadChartStats);
+  }
+
+  function setupNavigation() {
+    const prevBtn = document.getElementById('prev-report-btn');
+    const nextBtn = document.getElementById('next-report-btn');
+    if (!prevBtn || prevBtn.dataset.reportsNavBound === 'true') return;
+    prevBtn.dataset.reportsNavBound = 'true';
+    nextBtn && (nextBtn.dataset.reportsNavBound = 'true');
+
+    prevBtn.addEventListener('click', () => {
+      if (activeStatsTab === 'day') currentBaseDate.setDate(currentBaseDate.getDate() - 1);
+      else if (activeStatsTab === 'week') currentBaseDate.setDate(currentBaseDate.getDate() - 7);
+      else if (activeStatsTab === 'month') currentBaseDate.setMonth(currentBaseDate.getMonth() - 1);
+      else if (activeStatsTab === 'quarter') currentBaseDate.setMonth(currentBaseDate.getMonth() - 3);
+      else if (activeStatsTab === 'year') currentBaseDate.setFullYear(currentBaseDate.getFullYear() - 1);
+      loadReportStats();
+      loadChartStats();
+      loadUnpaidStats();
+    });
+
+    nextBtn?.addEventListener('click', () => {
+      if (activeStatsTab === 'day') currentBaseDate.setDate(currentBaseDate.getDate() + 1);
+      else if (activeStatsTab === 'week') currentBaseDate.setDate(currentBaseDate.getDate() + 7);
+      else if (activeStatsTab === 'month') currentBaseDate.setMonth(currentBaseDate.getMonth() + 1);
+      else if (activeStatsTab === 'quarter') currentBaseDate.setMonth(currentBaseDate.getMonth() + 3);
+      else if (activeStatsTab === 'year') currentBaseDate.setFullYear(currentBaseDate.getFullYear() + 1);
+      loadReportStats();
+      loadChartStats();
+      loadUnpaidStats();
+    });
+  }
+
+  async function initReportsView() {
+    const container = document.getElementById('stats-tabs-container');
+    if (!container) return; // Not on this page
+
+    // Move popup sheets to body once during initialization to avoid animation lag on click
+    const dayPicker = document.getElementById('day-picker-sheet');
+    const incomeDetails = document.getElementById('income-details-sheet');
+    const unpaidDetails = document.getElementById('unpaid-details-sheet');
+    const sessionsDetails = document.getElementById('sessions-details-sheet');
+    const absentDetails = document.getElementById('absent-details-sheet');
+    
+    if (dayPicker && dayPicker.parentElement !== document.body) document.body.appendChild(dayPicker);
+    if (incomeDetails && incomeDetails.parentElement !== document.body) document.body.appendChild(incomeDetails);
+    if (unpaidDetails && unpaidDetails.parentElement !== document.body) document.body.appendChild(unpaidDetails);
+    if (sessionsDetails && sessionsDetails.parentElement !== document.body) document.body.appendChild(sessionsDetails);
+    if (absentDetails && absentDetails.parentElement !== document.body) document.body.appendChild(absentDetails);
+
+    const skeleton = document.getElementById('reports-skeleton');
+    const data = document.getElementById('reports-data');
+    if (skeleton) skeleton.classList.remove('hidden');
+    if (data) data.classList.add('hidden');
+
+    setupTabs();
+    setupNavigation();
+    setupDayNavigation();
+    setupDayPicker();
+    setupTopIncomeCard();
+    setupIncomeDetailsGestures();
+    
+    await Promise.all([
+      loadUnpaidStats(),
+      loadReportStats(),
+      loadChartStats()
+    ]);
+
+    if (data) data.classList.remove('hidden');
+    if (skeleton) {
+      skeleton.classList.add('opacity-0');
+      setTimeout(() => skeleton.classList.add('hidden'), 200);
+    }
+  }
+
+  function bootReports() {
+    const container = document.getElementById('stats-tabs-container');
+    if (!container) return;
+    currentBaseDate = new Date();
+    currentDayDate = new Date();
+    activeStatsTab = 'day';
+    activeUnpaidTab = 'all';
+    activeChartTab = 'week';
+
+    // Setup initially
+    const setupVisuals = (btnClass: string, activeVal: string) => {
+      const btns = document.querySelectorAll('.' + btnClass);
+      btns.forEach(b => {
+        if (b.getAttribute('data-tab') === activeVal) {
+          b.classList.remove('text-text-muted', 'hover:text-text-main');
+          b.classList.add('text-text-inverse');
+        } else {
+          b.classList.remove('text-text-inverse');
+          b.classList.add('text-text-muted', 'hover:text-text-main');
+        }
+      });
+    };
+    
+    setupVisuals('stats-tab-btn', activeStatsTab);
+    setupVisuals('chart-tab-btn', activeChartTab);
+
+    initReportsView();
+  }
+
+  if (!(window as any)._reportsNavSetup) {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      bootReports();
+    } else {
+      document.addEventListener('DOMContentLoaded', bootReports);
+    }
+    document.addEventListener('astro:page-load', bootReports);
+
+    // Actualizare automată statistici la orice acțiune din aplicație
+    const reloadData = () => {
+      if (document.getElementById('stats-tabs-container')) {
+        loadUnpaidStats();
+        loadReportStats();
+        loadChartStats();
+      }
+    };
+    window.addEventListener('sessionsUpdated', reloadData);
+    window.addEventListener('patientsUpdated', reloadData);
+    window.addEventListener('paymentsUpdated', reloadData);
+
+    (window as any)._reportsNavSetup = true;
+  }
+
+
+  // ── SESSIONS & ABSENT DETAILS POPUPS ────────────────────────────────
+  
+  function getStatusStyle(status: string) {
+    if (status === 'finalizat' || status === 'finalizata') {
+      return { class: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Finalizat' };
+    }
+    if (status === 'absent') {
+      return { class: 'bg-rose-50 text-rose-700 border-rose-200', label: 'Absent' };
+    }
+    if (status === 'anulat') {
+      return { class: 'bg-orange-50 text-orange-700 border-orange-200', label: 'Anulat' };
+    }
+    return { class: 'bg-surface-base text-text-muted border-black/10', label: 'Programat' };
+  }
+
+  async function openSessionsDetails(startDate: string, endDate?: string) {
+    const sheet = document.getElementById('sessions-details-sheet');
+    const backdrop = document.getElementById('sessions-details-backdrop');
+    const content = document.getElementById('sessions-details-content');
+    const totalEl = document.getElementById('sessions-details-total');
+    const badgeEl = document.getElementById('sessions-details-count-badge');
+    const listEl = document.getElementById('sessions-details-list');
+
+    if (!sheet || !backdrop || !content || !listEl) return;
+
+    if (totalEl) totalEl.textContent = '--';
+    if (badgeEl) badgeEl.textContent = 'Se încarcă...';
+
+    listEl.innerHTML = `
+      <div class="h-[50vh] flex flex-col items-center justify-center space-y-4">
+        <div class="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-text-muted">Se caută ședințele...</p>
+      </div>
+    `;
+
+    // Hide navigation dock
+    const dock = document.getElementById('persistent-dock');
+    if (dock) {
+      dock.style.transition = 'opacity 0.25s ease';
+      dock.style.opacity = '0';
+      dock.style.pointerEvents = 'none';
+    }
+
+    sheet.dataset.open = 'true';
+    sheet.classList.remove('hidden');
+    void sheet.offsetWidth;
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    content.classList.remove('translate-y-full');
+    content.classList.add('translate-y-0');
+    lockBodyScroll();
+
+    setupSheetGestures('sessions');
+
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    try {
+      const sessions = await getDetailedSessions(startDate, endDate, 'all');
+      
+      const doneCount = sessions.filter(s => s.status === 'finalizat' || s.status === 'finalizata').length;
+      
+      if (totalEl) totalEl.textContent = sessions.length.toString();
+      if (badgeEl) badgeEl.textContent = `${doneCount} finalizate`;
+
+      if (sessions.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-8 px-4 text-center rounded-2xl bg-surface-base/50 border border-dashed border-border-subtle/50 flex flex-col items-center justify-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-surface-card flex items-center justify-center text-text-muted shadow-2xs">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p class="text-sm font-black text-text-main">Nicio ședință găsită</p>
+            <p class="text-xs font-bold text-text-muted">Nu există programări în această perioadă.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = sessions.map(s => {
+        const { class: badgeClass, label } = getStatusStyle(s.status);
+        const nameParts = (s.numeComplet || 'Pacient').split(' ').filter(Boolean);
+        const initials = nameParts.length >= 2 
+          ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase() 
+          : (nameParts[0]?.slice(0, 2).toUpperCase() || 'PA');
+          
+        return `
+          <a href="/dashboard/patients/${s.pacientId || ''}" data-astro-history="push" class="block p-3 rounded-2xl bg-surface-base border border-border-subtle/30 flex items-center gap-3 shadow-2xs hover:border-brand-primary/30 transition-colors">
+            <div class="w-10 h-10 rounded-xl bg-surface-card text-text-main flex items-center justify-center font-black text-sm shrink-0 shadow-sm border border-border-subtle">
+              ${initials}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-black text-text-main text-sm truncate">${s.numeComplet}</div>
+              <div class="text-xs font-bold text-text-muted flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                ${s.data.split('-').reverse().join('.')} la ${s.ora?.slice(0,5)}
+              </div>
+            </div>
+            <div class="px-2.5 py-1 rounded-lg border ${badgeClass} text-[10px] font-black uppercase tracking-wider shrink-0 text-center">
+              ${label}
+            </div>
+          </a>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Eroare încărcare sedinte:', err);
+      listEl.innerHTML = `<div class="p-4 rounded-2xl bg-rose-50 text-rose-700 text-xs font-bold text-center">Eroare la încărcare.</div>`;
+    }
+  }
+
+  async function openAbsentDetails(startDate: string, endDate?: string) {
+    const sheet = document.getElementById('absent-details-sheet');
+    const backdrop = document.getElementById('absent-details-backdrop');
+    const content = document.getElementById('absent-details-content');
+    const totalEl = document.getElementById('absent-details-total');
+    const listEl = document.getElementById('absent-details-list');
+
+    if (!sheet || !backdrop || !content || !listEl) return;
+
+    if (totalEl) totalEl.textContent = '--';
+
+    listEl.innerHTML = `
+      <div class="h-[50vh] flex flex-col items-center justify-center space-y-4">
+        <div class="w-10 h-10 border-4 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-text-muted">Se caută absențele...</p>
+      </div>
+    `;
+
+    // Hide navigation dock
+    const dock = document.getElementById('persistent-dock');
+    if (dock) {
+      dock.style.transition = 'opacity 0.25s ease';
+      dock.style.opacity = '0';
+      dock.style.pointerEvents = 'none';
+    }
+
+    sheet.dataset.open = 'true';
+    sheet.classList.remove('hidden');
+    void sheet.offsetWidth;
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    content.classList.remove('translate-y-full');
+    content.classList.add('translate-y-0');
+    lockBodyScroll();
+
+    setupSheetGestures('absent');
+
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    try {
+      const absences = await getDetailedSessions(startDate, endDate, 'absent');
+      
+      if (totalEl) totalEl.textContent = absences.length.toString();
+
+      if (absences.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-8 px-4 text-center rounded-2xl bg-surface-base/50 border border-dashed border-border-subtle/50 flex flex-col items-center justify-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-surface-card flex items-center justify-center text-emerald-500 shadow-2xs">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p class="text-sm font-black text-text-main">Toți pacienții au fost prezenți</p>
+            <p class="text-xs font-bold text-text-muted">Nu există nicio absență în această perioadă.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = absences.map(s => {
+        const nameParts = (s.numeComplet || 'Pacient').split(' ').filter(Boolean);
+        const initials = nameParts.length >= 2 
+          ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase() 
+          : (nameParts[0]?.slice(0, 2).toUpperCase() || 'PA');
+          
+        return `
+          <a href="/dashboard/patients/${s.pacientId || ''}" data-astro-history="push" class="block p-3 rounded-2xl bg-surface-base border border-border-subtle/30 flex items-center gap-3 shadow-2xs hover:border-rose-500/30 transition-colors">
+            <div class="w-10 h-10 rounded-xl bg-surface-card text-text-main flex items-center justify-center font-black text-sm shrink-0 shadow-sm border border-border-subtle">
+              ${initials}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-black text-text-main text-sm truncate">${s.numeComplet}</div>
+              <div class="text-xs font-bold text-text-muted flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                ${s.data.split('-').reverse().join('.')} la ${s.ora?.slice(0,5)}
+              </div>
+            </div>
+            <div class="px-2.5 py-1 rounded-lg border bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-black uppercase tracking-wider shrink-0 text-center">
+              Absent
+            </div>
+          </a>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Eroare încărcare absente:', err);
+      listEl.innerHTML = `<div class="p-4 rounded-2xl bg-rose-50 text-rose-700 text-xs font-bold text-center">Eroare la încărcare.</div>`;
+    }
+  }
+
+  function closeSheet(prefix: string) {
+    const sheet = document.getElementById(`${prefix}-details-sheet`);
+    const backdrop = document.getElementById(`${prefix}-details-backdrop`);
+    const content = document.getElementById(`${prefix}-details-content`);
+
+    if (!sheet || !backdrop || !content) return;
+
+    sheet.dataset.open = 'false';
+    content.style.transform = ''; 
+    content.classList.remove('translate-y-0');
+    content.classList.add('translate-y-full');
+    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    
+    // Show navigation dock again
+    const dock = document.getElementById('persistent-dock');
+    if (dock) {
+      dock.style.opacity = '1';
+      dock.style.pointerEvents = 'auto';
+    }
+
+    setTimeout(() => {
+      sheet.classList.add('hidden');
+      unlockBodyScroll();
+    }, 300);
+  }
+
+  function getDateRangeForTab(tab: string): { start: string, end?: string } {
+    if (tab === 'day') {
+      return { start: toLocalISOString(currentBaseDate).split('T')[0] };
+    }
+    if (lastStatData) {
+      if (lastStatData.startStr && lastStatData.endStr) {
+        return { start: lastStatData.startStr.split('T')[0], end: lastStatData.endStr.split('T')[0] };
+      }
+    }
+    return { start: toLocalISOString(currentBaseDate).split('T')[0] };
+  }
+
+  (window as any).openSessionsDetails = () => {
+    const period = getDateRangeForTab(activeStatsTab);
+    openSessionsDetails(period.start, period.end);
+  };
+
+  (window as any).openAbsentDetails = () => {
+    const period = getDateRangeForTab(activeStatsTab);
+    openAbsentDetails(period.start, period.end);
+  };
+
+  function setupSheetGestures(prefix: string) {
+    const sheet = document.getElementById(`${prefix}-details-sheet`);
+    const backdrop = document.getElementById(`${prefix}-details-backdrop`);
+    const content = document.getElementById(`${prefix}-details-content`);
+
+    if (!sheet || !backdrop || !content) return;
+
+    if (sheet.dataset.gesturesBound === 'true') return;
+    sheet.dataset.gesturesBound = 'true';
+
+    backdrop.addEventListener('click', () => closeSheet(prefix));
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    const resetDrag = () => {
+      isDragging = false;
+      content.style.transform = '';
+    };
+
+    content.addEventListener('touchstart', (e: TouchEvent) => {
+      if (content.scrollTop === 0) {
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+      if (deltaY > 0) {
+        content.style.transform = `translateY(${deltaY}px)`;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      const deltaY = currentY - startY;
+      content.style.transform = '';
+      if (deltaY > 80) {
+        closeSheet(prefix);
+      }
+    });
+
+    content.addEventListener('touchcancel', resetDrag);
+  }
+
+  // ── UPDATE UI FOR REPORTS ──────────────────────────────────────
+  (window as any).openUnpaidDetails = async function() {
+    const sheet = document.getElementById('unpaid-details-sheet');
+    const backdrop = document.getElementById('unpaid-details-backdrop');
+    const content = document.getElementById('unpaid-details-content');
+    const totalEl = document.getElementById('unpaid-details-total');
+    const badgeEl = document.getElementById('unpaid-details-count-badge');
+    const listEl = document.getElementById('unpaid-details-list');
+
+    if (!sheet || !backdrop || !content || !listEl) return;
+
+    if (badgeEl) badgeEl.textContent = 'Se încarcă...';
+    listEl.innerHTML = `
+      <div class="h-[50vh] flex flex-col items-center justify-center space-y-4">
+        <div class="w-10 h-10 border-4 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-text-muted">Se caută plățile restante...</p>
+      </div>
+    `;
+
+    // Hide navigation dock to prevent overlap and rendering lag
+    const dock = document.getElementById('persistent-dock');
+    if (dock) {
+      dock.style.transition = 'opacity 0.25s ease';
+      dock.style.opacity = '0';
+      dock.style.pointerEvents = 'none';
+    }
+
+    // Animate open
+    isUnpaidDetailsOpen = true;
+    sheet.dataset.open = 'true';
+    sheet.classList.remove('hidden');
+    void sheet.offsetWidth;
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    content.classList.remove('translate-y-full');
+    content.classList.add('translate-y-0');
+    lockBodyScroll();
+
+    setupUnpaidDetailsGestures();
+
+    // Wait for the slide-up transition to fully complete before starting database calls
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    try {
+      const unpaid = await getUnpaidPatients();
+      
+      if (totalEl) totalEl.innerHTML = `${unpaid.totalRON} <span class="text-sm font-sans font-black">RON</span>`;
+      if (badgeEl) badgeEl.textContent = `${unpaid.count} pacienți`;
+
+      if (unpaid.patients.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-8 px-4 text-center rounded-2xl bg-surface-base/50 border border-dashed border-border-subtle/50 flex flex-col items-center justify-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-surface-card flex items-center justify-center text-emerald-500 shadow-2xs">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="text-sm font-black text-text-main">Toate plățile sunt la zi</p>
+            <p class="text-xs font-bold text-text-muted">Nu există niciun pacient cu sume restante.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = unpaid.patients.map(p => {
+        const nameParts = (p.name || 'Pacient').split(' ').filter(Boolean);
+        const initials = nameParts.length >= 2 
+          ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase() 
+          : (nameParts[0]?.slice(0, 2).toUpperCase() || 'PA');
+
+        return `
+          <a href="/dashboard/patients/${p.id}" data-astro-history="push" class="block p-3.5 rounded-2xl bg-surface-base border border-border-subtle/30 flex items-center justify-between gap-3 shadow-2xs hover:border-rose-500/30 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-surface-card text-text-main flex items-center justify-center font-black text-sm shrink-0 shadow-sm border border-border-subtle">
+                ${initials}
+              </div>
+              <div class="min-w-0">
+                <div class="font-black text-text-main text-sm sm:text-base truncate">${p.name}</div>
+                <div class="text-xs font-bold text-text-muted">Total pachet: ${p.cost || 0} RON</div>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-base sm:text-lg font-black text-rose-600">-${p.suma_restanta} RON</div>
+              <div class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Restanță</div>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+    } catch (err) {
+      console.error('Eroare încărcare restanțe:', err);
+      listEl.innerHTML = `
+        <div class="p-4 rounded-2xl bg-rose-50 text-rose-700 text-xs font-bold text-center">
+          Eroare la încărcarea listei de restanțe. Te rugăm să încerci din nou.
+        </div>
+      `;
+    }
+  }
+
+  function closeUnpaidDetails() {
+    const sheet = document.getElementById('unpaid-details-sheet');
+    const backdrop = document.getElementById('unpaid-details-backdrop');
+    const content = document.getElementById('unpaid-details-content');
+
+    if (!sheet || !backdrop || !content) return;
+
+    isUnpaidDetailsOpen = false;
+    sheet.dataset.open = 'false';
+    content.style.transform = ''; 
+    content.classList.remove('translate-y-0');
+    content.classList.add('translate-y-full');
+    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    
+    // Show navigation dock again
+    const dock = document.getElementById('persistent-dock');
+    if (dock) {
+      dock.style.opacity = '1';
+      dock.style.pointerEvents = 'auto';
+    }
+
+    setTimeout(() => {
+      sheet.classList.add('hidden');
+      unlockBodyScroll();
+    }, 300);
+  }
+
+  function setupUnpaidDetailsGestures() {
+    const sheet = document.getElementById('unpaid-details-sheet');
+    const backdrop = document.getElementById('unpaid-details-backdrop');
+    const content = document.getElementById('unpaid-details-content');
+
+    if (!sheet || !backdrop || !content) return;
+
+    if (sheet.dataset.gesturesBound === 'true') return;
+    sheet.dataset.gesturesBound = 'true';
+
+    backdrop.addEventListener('click', closeUnpaidDetails);
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    const resetDrag = () => {
+      isDragging = false;
+      content.style.transform = '';
+    };
+
+    content.addEventListener('touchstart', (e: TouchEvent) => {
+      if (content.scrollTop === 0) {
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        isDragging = true;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+      if (deltaY > 0) {
+        content.style.transform = `translateY(${deltaY}px)`;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      const deltaY = currentY - startY;
+      content.style.transform = '';
+      if (deltaY > 80) {
+        closeUnpaidDetails();
+      }
+    });
+
+    content.addEventListener('touchcancel', resetDrag);
+  }
+
+</script>

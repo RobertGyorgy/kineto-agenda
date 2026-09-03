@@ -1,0 +1,787 @@
+---
+---
+<div 
+  id="payment-sheet" 
+  data-sheet-root 
+  class="fixed inset-x-0 bottom-0 z-[130] bg-white rounded-t-[2.5rem] pt-5 pb-0 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] translate-y-full will-change-transform flex flex-col max-h-[92vh] overflow-hidden"
+>
+  <div id="payment-drag-handle" class="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+
+  <div class="flex-1 overflow-y-auto px-6 pt-1 pb-36 space-y-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight">Status plată</h2>
+        <p class="text-neutral-500 font-medium mt-1" id="payment-subtitle">Selectează modalitatea de plată</p>
+      </div>
+    </div>
+
+    <!-- Card 1: Unified Top Financial Summary Card -->
+    <div id="payment-summary-box" class="bg-neutral-50 rounded-[2rem] p-5 border border-black/5 space-y-4 shadow-sm">
+      <!-- Top Row: Patient Name & Status Badge -->
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h3 class="font-black text-neutral-900 text-xl tracking-tight truncate" id="payment-patient-name">Se încarcă…</h3>
+        </div>
+        <div id="payment-current-status-badge" class="px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black whitespace-nowrap bg-neutral-200 text-neutral-800 shadow-sm shrink-0">
+          -
+        </div>
+      </div>
+
+      <!-- Financial Metrics: Clean 2-Card Layout + Rest Bar -->
+      <div class="space-y-2.5">
+        <div class="grid grid-cols-2 gap-2.5">
+          <!-- Card 1: Cost total -->
+          <div class="p-4 rounded-2xl bg-white border border-black/5 shadow-2xs">
+            <span class="block text-xs font-black text-black">Cost total</span>
+            <strong class="block text-xl font-black text-neutral-900 mt-0.5" id="payment-total-cost">0 RON</strong>
+          </div>
+
+          <!-- Card 2: Achitat -->
+          <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 shadow-2xs">
+            <span class="block text-xs font-black text-black">Achitat</span>
+            <strong class="block text-xl font-black text-emerald-700 mt-0.5" id="payment-total-paid">0 RON</strong>
+          </div>
+        </div>
+
+        <!-- Card 3: Rest de plată -->
+        <div id="payment-remaining-row" class="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white border border-black/5 shadow-2xs text-sm transition-colors duration-200">
+          <span class="font-black text-black text-sm" id="payment-remaining-label">Rest de plată</span>
+          <strong class="text-base font-black text-neutral-900" id="payment-remaining-due">0 RON</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Istoric Plăți (Matching Rounded Card) -->
+    <div class="bg-neutral-50 rounded-[2rem] p-5 border border-black/5 space-y-3 shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-black">Istoric plăți</span>
+      </div>
+      <div id="payment-history-list" class="space-y-2.5 max-h-48 overflow-y-auto pr-0.5">
+        <div class="text-xs font-semibold text-neutral-400 py-2 text-center">Se încarcă istoricul…</div>
+      </div>
+    </div>
+
+    <!-- View 1: Initial Options (Dropdown) -->
+    <div id="payment-options-view" class="space-y-4 pt-2 pb-6">
+      <div class="relative">
+        <button type="button" id="btn-payment-status-toggle" class="w-full py-4 px-6 rounded-2xl bg-neutral-100 text-neutral-900 font-bold text-lg active:scale-95 transition-transform flex items-center justify-between">
+          <span id="payment-status-label">Schimbă status plată</span>
+          <svg class="w-5 h-5 transition-transform duration-200" id="payment-status-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <div id="payment-status-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-3xl border border-black/10 shadow-2xl z-20 p-2.5 flex flex-col gap-2">
+          <button type="button" id="btn-partially-paid" class="w-full py-3.5 px-5 text-left font-black text-base rounded-2xl bg-amber-100 text-amber-900 border border-amber-200/80 hover:bg-amber-200 active:scale-[0.98] transition-all flex items-center justify-between shadow-2xs cursor-pointer">
+            <span>Plată parțială</span>
+            <svg class="w-6 h-6 text-amber-900 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+
+          <button type="button" id="btn-fully-paid" class="w-full py-3.5 px-5 text-left font-black text-base rounded-2xl bg-emerald-100 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-200 active:scale-[0.98] transition-all flex items-center justify-between shadow-2xs cursor-pointer">
+            <span>Achitat integral</span>
+            <svg class="w-6 h-6 text-emerald-900 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+
+          <button type="button" id="btn-reset-payment" class="w-full py-3.5 px-5 text-left font-black text-base rounded-2xl bg-rose-100 text-rose-900 border border-rose-200/80 hover:bg-rose-200 active:scale-[0.98] transition-all flex items-center justify-between shadow-2xs cursor-pointer">
+            <span>Neachitat</span>
+            <svg class="w-6 h-6 text-rose-900 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View 2: Custom Amount Form (Sticky to bottom when visible) -->
+  <div id="custom-amount-view" class="absolute bottom-0 left-0 right-0 p-5 bg-white border-t border-black/5 shadow-2xl flex-col gap-2.5 pb-safe z-10 hidden">
+    <div class="relative w-full">
+      <label for="custom-amount-input" class="block text-sm font-semibold text-neutral-700 mb-2" id="custom-amount-label">Introdu suma nouă (RON)</label>
+      <div class="relative flex items-center">
+        <input 
+          type="number" 
+          id="custom-amount-input" 
+          class="w-full bg-neutral-100 border-none rounded-2xl py-4 pl-4 pr-16 text-lg font-bold text-neutral-900 placeholder:text-neutral-400 focus:ring-2 focus:ring-black transition-all"
+          placeholder="0"
+        >
+        <span class="absolute right-4 text-neutral-500 font-bold text-lg pointer-events-none">RON</span>
+      </div>
+    </div>
+    
+    <div class="flex w-full gap-3 pt-2 mt-4">
+      <button type="button" id="btn-cancel-custom" class="flex-1 py-4 px-6 rounded-2xl bg-neutral-100 text-neutral-700 font-bold text-lg active:scale-95 transition-transform">
+        Înapoi
+      </button>
+      <button type="button" id="btn-confirm-custom" class="flex-[2] py-4 px-6 rounded-2xl bg-black text-white font-bold text-lg active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-black/20">
+        <span>Confirmă plata</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { getPatient, setPaymentStatus, addPayment, getPatientPayments, resetPayments, getPatientPaymentHistoryDetails } from '../../../lib/services/patientService';
+  import { getAppointmentsByPatient } from '../../../lib/services/appointmentService';
+  import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
+
+  class PaymentSheetManager {
+    private sheet: HTMLElement | null = null;
+    private overlay: HTMLElement | null = null;
+    
+    private optionsView: HTMLElement | null = null;
+    private customView: HTMLElement | null = null;
+    private customInput: HTMLInputElement | null = null;
+    private customLabel: HTMLElement | null = null;
+    private subtitleText: HTMLElement | null = null;
+    
+    private currentPatientId: string | null = null;
+    private previousAmount: number = 0;
+    private patientCost: number = 0;
+    private isOpen = false;
+    private startY = 0;
+    private currentY = 0;
+    private startX = 0;
+    private dragEngaged = false;
+    private startTime = 0;
+    private scrollAtTop: boolean = true;
+
+    constructor() {
+      this.reconnect();
+      this.createOverlay();
+      this.bindEvents();
+    }
+
+    private reconnect() {
+      this.sheet = document.getElementById('payment-sheet');
+      this.optionsView = document.getElementById('payment-options-view');
+      this.customView = document.getElementById('custom-amount-view');
+      this.customInput = document.getElementById('custom-amount-input') as HTMLInputElement;
+      this.customLabel = document.getElementById('custom-amount-label');
+      this.subtitleText = document.getElementById('payment-subtitle');
+      if (this.sheet?.dataset.open === 'true') this.isOpen = true;
+    }
+
+    createOverlay() {
+      const existingOverlays = document.querySelectorAll('.payment-sheet-overlay');
+      existingOverlays.forEach(o => o.remove());
+
+      this.overlay = document.createElement('div');
+      this.overlay.className = 'fixed inset-0 bg-black/25 z-[120] opacity-0 pointer-events-none transition-opacity duration-300 payment-sheet-overlay';
+      document.body.appendChild(this.overlay);
+    }
+
+    handleOpenEvent(e: CustomEvent) {
+      this.reconnect();
+      this.currentPatientId = e.detail.patientId;
+      this.resetView();
+      this.open();
+    }
+
+    private bindEvents() {
+      if (!this.sheet) return;
+
+      if (this.sheet.dataset.paymentEventsBound !== 'true') {
+        this.sheet.dataset.paymentEventsBound = 'true';
+        this.sheet.addEventListener('click', (e) => {
+          const mgr = (window as any).currentPaymentSheetManager || this;
+          mgr.handleClick(e);
+        });
+      }
+
+      // Backdrop click
+      if (this.overlay && this.overlay.dataset.clickBound !== 'true') {
+        this.overlay.dataset.clickBound = 'true';
+        this.overlay.addEventListener('click', () => {
+          const mgr = (window as any).currentPaymentSheetManager || this;
+          mgr.close();
+        });
+      }
+
+      // Swipe gesture
+      if (this.sheet.dataset.paymentSwipeBound !== 'true') {
+        this.sheet.dataset.paymentSwipeBound = 'true';
+        this.sheet.addEventListener('touchstart', (e: any) => {
+          ((window as any).currentPaymentSheetManager || this).handleTouchStart(e);
+        }, { passive: true });
+        this.sheet.addEventListener('touchmove', (e: any) => {
+          ((window as any).currentPaymentSheetManager || this).handleTouchMove(e);
+        }, { passive: false });
+        this.sheet.addEventListener('touchend', (e: any) => {
+          ((window as any).currentPaymentSheetManager || this).handleTouchEnd(e);
+        }, { passive: true });
+        this.sheet.addEventListener('touchcancel', () => {
+          ((window as any).currentPaymentSheetManager || this).cancelDrag();
+        }, { passive: true });
+      }
+
+      // Dedicated drag handle: always draggable regardless of scroll position
+      const dragHandle = document.getElementById('payment-drag-handle');
+      if (dragHandle && dragHandle.dataset.paymentDragBound !== 'true') {
+        dragHandle.dataset.paymentDragBound = 'true';
+        let handleStartY = 0;
+        let handleCurrentY = 0;
+        let handleDragging = false;
+        let handleStartTime = 0;
+
+        dragHandle.addEventListener('touchstart', (e: TouchEvent) => {
+          e.stopPropagation();
+          handleStartY = e.touches[0].clientY;
+          handleCurrentY = handleStartY;
+          handleDragging = true;
+          handleStartTime = Date.now();
+          if (this.sheet) this.sheet.style.transition = 'none';
+        }, { passive: true });
+
+        dragHandle.addEventListener('touchmove', (e: TouchEvent) => {
+          e.stopPropagation();
+          if (!handleDragging) return;
+          handleCurrentY = e.touches[0].clientY;
+          const deltaY = handleCurrentY - handleStartY;
+          if (deltaY > 0 && this.sheet) {
+            if (e.cancelable) e.preventDefault();
+            this.sheet.style.transform = `translateY(${deltaY}px)`;
+          }
+        }, { passive: false });
+
+        const onHandleEnd = () => {
+          if (!handleDragging) return;
+          handleDragging = false;
+          const deltaY = handleCurrentY - handleStartY;
+          const elapsed = Date.now() - handleStartTime;
+          const vel = deltaY / elapsed;
+          if (this.sheet) {
+            this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+            if (deltaY > 60 || (vel > 0.3 && deltaY > 15)) {
+              const mgr = (window as any).currentPaymentSheetManager || this;
+              mgr.close();
+            } else {
+              this.sheet.style.transform = 'translateY(0)';
+            }
+          }
+        };
+        dragHandle.addEventListener('touchend', onHandleEnd);
+        dragHandle.addEventListener('touchcancel', onHandleEnd);
+      }
+
+      // Allow pressing Enter to confirm
+      if (this.customInput && this.customInput.dataset.paymentInputBound !== 'true') {
+        this.customInput.dataset.paymentInputBound = 'true';
+        this.customInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            this.handleCustomConfirm();
+          }
+        });
+      }
+    }
+
+    private handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+
+      const dropdown = document.getElementById('payment-status-dropdown');
+      const toggleBtn = document.getElementById('btn-payment-status-toggle');
+
+      // Toggle dropdown
+      if (target.closest('#btn-payment-status-toggle')) {
+        if (dropdown) {
+          dropdown.classList.toggle('hidden');
+          const arrow = document.getElementById('payment-status-arrow');
+          if (arrow) arrow.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        return;
+      }
+
+      // Închide dropdown-ul la click în afara lui
+      if (dropdown && !dropdown.classList.contains('hidden') && !target.closest('#payment-status-dropdown') && !target.closest('#btn-payment-status-toggle')) {
+        dropdown.classList.add('hidden');
+        const arrow = document.getElementById('payment-status-arrow');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      }
+
+      if (target.closest('#payment-backdrop')) {
+        this.close();
+        return;
+      }
+      if (target.closest('#btn-partially-paid')) {
+        dropdown?.classList.add('hidden');
+        const arrow = document.getElementById('payment-status-arrow');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+        this.showCustomView();
+        return;
+      }
+      if (target.closest('#btn-fully-paid')) {
+        dropdown?.classList.add('hidden');
+        const arrow = document.getElementById('payment-status-arrow');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+        this.handleFullyPaid();
+        return;
+      }
+      if (target.closest('#btn-reset-payment')) {
+        dropdown?.classList.add('hidden');
+        const arrow = document.getElementById('payment-status-arrow');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+        this.handleResetPayment();
+        return;
+      }
+      if (target.closest('#btn-cancel-custom')) {
+        this.resetView();
+        return;
+      }
+      if (target.closest('#btn-confirm-custom')) {
+        this.handleCustomConfirm();
+        return;
+      }
+    }
+    
+    private async showCustomView() {
+      if (!this.currentPatientId || !this.optionsView || !this.customView) return;
+
+      try {
+        const patient = await getPatient(this.currentPatientId);
+        this.patientCost = patient.cost || 0;
+      } catch (e) {
+        this.patientCost = 0;
+      }
+
+      this.previousAmount = 0;
+
+      // Update UI text
+      if (this.customLabel) {
+        this.customLabel.textContent = 'Introdu suma achitată:';
+      }
+      if (this.subtitleText) {
+        this.subtitleText.textContent = 'Suma parțială';
+      }
+
+      // Swap views
+      this.optionsView.classList.add('hidden');
+      this.customView.classList.remove('hidden');
+
+      // Focus input
+      if (this.customInput) {
+        this.customInput.value = '';
+        setTimeout(() => this.customInput?.focus(), 100);
+      }
+    }
+    
+    private async handleCustomConfirm() {
+      if (!this.customInput || !this.currentPatientId) return;
+
+      const amountStr = this.customInput.value;
+      if (amountStr !== null && amountStr.trim() !== '') {
+        const parsed = parseInt(amountStr, 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          try {
+            await addPayment(this.currentPatientId, parsed, false);
+            window.dispatchEvent(new CustomEvent('patientsUpdated'));
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+            window.dispatchEvent(new CustomEvent('paymentsUpdated', { detail: { patientId: this.currentPatientId } }));
+            this.close();
+          } catch (err: any) {
+            (window as any).showToast('Eroare la adăugarea plății: ' + (err.message || err), 'error');
+          }
+        }
+      }
+    }
+    
+    private async handleFullyPaid() {
+      if (!this.currentPatientId) return;
+      try {
+        const patient = await getPatient(this.currentPatientId);
+        const cost = patient.cost || 0;
+        const totalPaid = await getPatientPayments(this.currentPatientId);
+        const remaining = cost - totalPaid;
+        
+        if (remaining > 0) {
+           await addPayment(this.currentPatientId, remaining, true);
+        } else {
+           await setPaymentStatus(this.currentPatientId, true);
+        }
+        (window as any).showToast('Plata a fost marcată ca achitată integral.', 'success');
+        window.dispatchEvent(new CustomEvent('patientsUpdated'));
+        window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+        window.dispatchEvent(new CustomEvent('paymentsUpdated', { detail: { patientId: this.currentPatientId } }));
+        this.close();
+      } catch (err: any) {
+        (window as any).showToast('Eroare la actualizarea plății: ' + (err.message || err), 'error');
+      }
+    }
+
+    private async handleResetPayment() {
+      if (!this.currentPatientId) return;
+      try {
+        await resetPayments(this.currentPatientId);
+        (window as any).showToast('Plățile pacientului au fost resetate.', 'info');
+        window.dispatchEvent(new CustomEvent('patientsUpdated'));
+        window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+        window.dispatchEvent(new CustomEvent('paymentsUpdated', { detail: { patientId: this.currentPatientId } }));
+        this.close();
+      } catch (err: any) {
+        (window as any).showToast('Eroare la resetarea plății: ' + (err.message || err), 'error');
+      }
+    }
+    
+    private resetView() {
+      if (this.optionsView && this.customView) {
+        this.customView.classList.add('hidden');
+        this.optionsView.classList.remove('hidden');
+      }
+      if (this.subtitleText) {
+        this.subtitleText.textContent = 'Selectează modalitatea de plată';
+      }
+      if (this.customInput) {
+        this.customInput.value = '';
+      }
+    }
+
+    private handleTouchStart(e: TouchEvent) {
+      if (!e.touches || e.touches.length === 0) return;
+      this.startTime = Date.now();
+      this.startY = e.touches[0].clientY;
+      this.currentY = this.startY;
+      this.startX = e.touches[0].clientX;
+      this.dragEngaged = false;
+
+      const target = e.target as HTMLElement;
+      // If user drags directly on the handle, always engage swipe
+      if (target && (target.id === 'payment-drag-handle' || target.closest('#payment-drag-handle'))) {
+        this.scrollAtTop = true;
+        return;
+      }
+
+      // Otherwise, only allow swipe if the content is at the top
+      this.scrollAtTop = !this.sheet || this.sheet.scrollTop <= 0;
+    }
+
+    private handleTouchMove(e: TouchEvent) {
+      if (!e.touches || e.touches.length === 0) return;
+      const y = e.touches[0].clientY;
+      const deltaY = y - this.startY;
+      const deltaX = e.touches[0].clientX - this.startX;
+
+      if (!this.dragEngaged) {
+        if (this.scrollAtTop && deltaY > 10 && deltaY > Math.abs(deltaX) * 1.5) {
+          this.dragEngaged = true;
+          if (this.sheet) this.sheet.style.transition = 'none';
+        } else {
+          return;
+        }
+      }
+
+      this.currentY = y;
+      if (deltaY > 0 && this.sheet) {
+        if (e.cancelable) e.preventDefault();
+        this.sheet.style.transform = `translateY(${deltaY}px)`;
+      }
+    }
+
+    private handleTouchEnd(e?: TouchEvent) {
+      if (!this.sheet || !this.dragEngaged) {
+        this.dragEngaged = false;
+        return;
+      }
+      this.dragEngaged = false;
+      const deltaY = this.currentY - this.startY;
+      const timeElapsed = Date.now() - this.startTime;
+      const velocity = deltaY / timeElapsed;
+      this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+      
+      // Close if dragged down more than 80px OR flicked fast
+      if (deltaY > 80 || (velocity > 0.4 && deltaY > 20)) {
+        this.close();
+      } else {
+        this.sheet.style.transform = 'translateY(0)';
+      }
+    }
+
+    private cancelDrag() {
+      this.dragEngaged = false;
+      if (this.sheet) {
+        this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+        this.sheet.style.transform = 'translateY(0)';
+      }
+    }
+
+    private async loadPatientFinancials() {
+      if (!this.currentPatientId) return;
+      try {
+        const patient = await getPatient(this.currentPatientId);
+        let totalPaid = await getPatientPayments(this.currentPatientId);
+        const cost = Number(patient.cost || 0);
+        const statusPlata = (patient as any).status_plata;
+        const isFullyPaid = patient.achitat === true || statusPlata === 'Achitat integral' || statusPlata === 'Achitat' || (cost > 0 && totalPaid >= cost);
+        
+        if (isFullyPaid && totalPaid < cost) {
+          totalPaid = cost;
+        }
+
+        const remaining = isFullyPaid ? 0 : Math.max(0, cost - totalPaid);
+
+        let displayStatusLabel = 'Neachitat';
+        let statusBadgeClass = 'bg-white text-black border border-black/10 font-black';
+
+        if (isFullyPaid) {
+          displayStatusLabel = 'Achitat';
+          statusBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-black';
+        } else if (totalPaid > 0) {
+          displayStatusLabel = `${totalPaid}/${cost} RON`;
+          statusBadgeClass = 'bg-orange-100 text-black border border-transparent font-black';
+        }
+
+        const nameEl = document.getElementById('payment-patient-name');
+        const totalCostEl = document.getElementById('payment-total-cost');
+        const totalPaidEl = document.getElementById('payment-total-paid');
+        const remainingDueEl = document.getElementById('payment-remaining-due');
+        const statusBadgeEl = document.getElementById('payment-current-status-badge');
+        const historyListEl = document.getElementById('payment-history-list');
+
+        if (nameEl) nameEl.textContent = patient.name;
+        if (totalCostEl) totalCostEl.textContent = `${cost} RON`;
+        if (totalPaidEl) totalPaidEl.textContent = `${totalPaid} RON`;
+        const remainingRowEl = document.getElementById('payment-remaining-row');
+        const remainingLabelEl = document.getElementById('payment-remaining-label');
+
+        if (remainingDueEl) {
+          remainingDueEl.textContent = `${remaining} RON`;
+        }
+
+        if (remainingRowEl && remainingLabelEl && remainingDueEl) {
+          if (remaining > 0) {
+            remainingRowEl.className = 'flex items-center justify-between px-4 py-3.5 rounded-2xl bg-rose-50 border border-rose-200 shadow-2xs text-sm transition-colors duration-200';
+            remainingLabelEl.className = 'font-black text-rose-900 text-sm';
+            remainingDueEl.className = 'text-base font-black text-rose-600';
+          } else {
+            remainingRowEl.className = 'flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white border border-black/5 shadow-2xs text-sm transition-colors duration-200';
+            remainingLabelEl.className = 'font-black text-black text-sm';
+            remainingDueEl.className = 'text-base font-black text-neutral-900';
+          }
+        }
+        if (statusBadgeEl) {
+          statusBadgeEl.textContent = displayStatusLabel;
+          statusBadgeEl.className = `px-5 py-2.5 rounded-2xl text-sm sm:text-base font-black whitespace-nowrap ${statusBadgeClass} shadow-sm shrink-0`;
+        }
+
+        // Fetch & render payment transaction history + session history
+        if (historyListEl) {
+          try {
+            const [historyItems, patientAppts] = await Promise.all([
+              getPatientPaymentHistoryDetails(this.currentPatientId),
+              getAppointmentsByPatient(this.currentPatientId),
+            ]);
+
+            // ✅ FIX: fallback la 1 în loc de 10 pentru pacienți cu ședință unică
+            const totalSess = Number((patient as any).sedinte_total) || 1;
+
+            // Toate ședințele pacientului, cronologic, numerotate în cadrul abonamentului
+            const doneSessions = (patientAppts || [])
+              .sort((a: any, b: any) => `${a.data}T${a.ora}`.localeCompare(`${b.data}T${b.ora}`))
+              .map((a: any, i: number) => ({
+                dateStr: a.data,
+                status: a.status || 'programat',
+                subNr: Math.floor(i / totalSess) + 1,
+                sessionNr: (i % totalSess) + 1,
+              }));
+
+            // Grupează plățile pe abonamente. Fiecare `cost` RON plătit = un abonament nou.
+            const sortedHistory = [...historyItems].sort((a, b) => {
+              const da = a.data_platii || '';
+              const db = b.data_platii || '';
+              return da.localeCompare(db);
+            });
+
+            const subscriptions: Array<{ nr: number; payments: typeof sortedHistory; total: number; sessions: typeof doneSessions }> = [];
+            let currentSub = { nr: 1, payments: [] as typeof sortedHistory, total: 0, sessions: [] as typeof doneSessions };
+            subscriptions.push(currentSub);
+
+            for (const item of sortedHistory) {
+              if (currentSub.total >= cost && cost > 0) {
+                currentSub = { nr: currentSub.nr + 1, payments: [], total: 0, sessions: [] };
+                subscriptions.push(currentSub);
+              }
+              currentSub.payments.push(item);
+              currentSub.total += item.suma;
+            }
+
+            // Atașează ședințele finalizate la abonamentul lor
+            for (const s of doneSessions) {
+              let sub = subscriptions.find(x => x.nr === s.subNr);
+              if (!sub) {
+                sub = { nr: s.subNr, payments: [], total: 0, sessions: [] };
+                subscriptions.push(sub);
+              }
+              sub.sessions.push(s);
+            }
+
+            // Elimină abonamentul 1 gol (fără plăți și fără ședințe)
+            const nonEmptySubs = subscriptions.filter(s => s.payments.length > 0 || s.sessions.length > 0);
+
+            if (nonEmptySubs.length === 0) {
+              historyListEl.innerHTML = `
+                <div class="py-3 px-4 rounded-2xl bg-white/70 border border-black/5 text-center text-xs font-semibold text-neutral-400">
+                  Nicio plată sau ședință înregistrată încă.
+                </div>
+              `;
+            } else {
+              historyListEl.innerHTML = nonEmptySubs.map(sub => {
+                const paymentsHtml = sub.payments.length > 0
+                  ? `<div class="space-y-1">
+                      <div class="px-1 text-[10px] font-black uppercase tracking-wider text-text-muted">Plăți</div>
+                      ${sub.payments.map(item => {
+                        let dateStr = item.data_platii || 'Dată necunoscută';
+                        if (dateStr && dateStr.includes('-')) {
+                          const parts = dateStr.split('T')[0].split('-');
+                          if (parts.length === 3) dateStr = `${parts[2]}.${parts[1]}`;
+                        }
+
+                        let paymentTypeLabel = 'Plată parțială';
+                        if (item.suma >= cost || item.descriere === 'Achitat integral') {
+                          paymentTypeLabel = 'Achitat integral';
+                        }
+
+                        return `
+                          <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-white/60 border border-black/5 text-xs">
+                            <div class="min-w-0">
+                              <span class="block font-bold text-neutral-700">${paymentTypeLabel}</span>
+                              <span class="block font-black text-black text-[11px] mt-0.5">${dateStr}</span>
+                            </div>
+                            <span class="font-black text-emerald-600 text-sm shrink-0 ml-2">+${item.suma} RON</span>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>`
+                  : '';
+
+                const sessionsHtml = sub.sessions.length > 0
+                  ? `<div class="space-y-1">
+                      <div class="px-1 text-[10px] font-black uppercase tracking-wider text-text-muted">Ședințe</div>
+                      <div class="pt-1 space-y-1">
+                        ${sub.sessions.map(s => {
+                          let sDate = s.dateStr || '';
+                          if (sDate.includes('-')) {
+                            const parts = sDate.split('T')[0].split('-');
+                            if (parts.length === 3) sDate = `${parts[2]}.${parts[1]}`;
+                          }
+                          const statusLabel = s.status === 'finalizat' ? 'Finalizată'
+                            : s.status === 'absent' ? 'Absent'
+                            : s.status === 'anulat' ? 'Anulată'
+                            : 'Programată';
+                          const statusClass = s.status === 'finalizat' ? 'text-emerald-600'
+                            : s.status === 'absent' ? 'text-orange-500'
+                            : s.status === 'anulat' ? 'text-rose-500'
+                            : 'text-sky-600';
+                          return `
+                            <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/[0.03] text-xs">
+                              <div class="flex items-center gap-2">
+                                <span class="font-black text-black">${sDate}</span>
+                                <span class="font-bold text-neutral-500">Șed. nr. ${s.sessionNr}</span>
+                              </div>
+                              <span class="font-black ${statusClass}">${statusLabel}</span>
+                            </div>
+                          `;
+                        }).join('')}
+                      </div>
+                    </div>`
+                  : '';
+
+                const subRemaining = Math.max(0, cost - sub.total);
+                const subIsFullyPaid = sub.total >= cost;
+                const subStatusHtml = subIsFullyPaid
+                  ? `<span class="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl">Achitat</span>`
+                  : `<span class="text-[11px] font-black text-rose-700 bg-rose-50 px-2.5 py-1 rounded-xl">Rest: ${subRemaining} RON</span>`;
+
+                return `
+                  <div class="p-3 rounded-2xl bg-white border border-black/5 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between px-1">
+                      <span class="text-xs font-black uppercase tracking-wider text-black">Abonament ${sub.nr}</span>
+                      ${subStatusHtml}
+                    </div>
+                    ${paymentsHtml}
+                    ${sessionsHtml}
+                  </div>
+                `;
+              }).join('');
+            }
+          } catch (e) {
+            historyListEl.innerHTML = `<div class="text-xs font-bold text-rose-500 text-center py-2">Eroare la citirea istoricului.</div>`;
+          }
+        }
+      } catch (e) {
+        console.error('Eroare la citirea datelor financiare ale pacientului:', e);
+      }
+    }
+
+    private open() {
+      if (!this.sheet || !this.overlay) return;
+      this.isOpen = true;
+      this.loadPatientFinancials();
+
+      this.sheet.style.maxHeight = `${window.innerHeight * 0.9}px`;
+      if (document.activeElement && 'blur' in document.activeElement) {
+        (document.activeElement as HTMLElement).blur();
+      }
+
+      this.sheet.dataset.open = 'true';
+      void this.sheet.offsetWidth;
+
+      this.overlay.classList.remove('opacity-0', 'pointer-events-none');
+      this.overlay.classList.add('pointer-events-auto');
+      this.sheet.classList.remove('translate-y-full');
+      lockBodyScroll();
+    }
+
+    private close() {
+      if (!this.sheet || !this.overlay || !this.isOpen) return;
+      this.isOpen = false;
+      unlockBodyScroll();
+
+      // Clear any inline drag styles so the class-based transition takes over
+      this.sheet.style.transition = '';
+      this.sheet.style.transform = '';
+
+      this.overlay.classList.add('opacity-0', 'pointer-events-none');
+      this.overlay.classList.remove('pointer-events-auto');
+      this.sheet.classList.add('translate-y-full');
+
+      // Remove focus to prevent keyboard from staying open on mobile
+      if (this.customInput && document.activeElement === this.customInput) {
+        this.customInput.blur();
+      }
+
+      setTimeout(() => {
+        if (!this.isOpen && this.sheet) {
+          this.sheet.dataset.open = 'false';
+          this.currentPatientId = null;
+          this.resetView(); // reset to default options when closed
+        }
+      }, 500);
+    }
+  }
+
+  function initPaymentSheet() {
+    if (!document.getElementById('payment-sheet')) return;
+
+    // Only bind the window event listener once globally; route each open event
+    // to the current manager so it survives Astro view transitions.
+    if (!(window as any)._paymentSheetWindowListenerBound) {
+      window.addEventListener('openPaymentSheet', (e: Event) => {
+        (window as any).currentPaymentSheetManager?.handleOpenEvent(e as CustomEvent);
+      });
+      (window as any)._paymentSheetWindowListenerBound = true;
+    }
+
+    // Recreate the manager on every page navigation so its element references
+    // and listeners are always attached to the current DOM.
+    (window as any).currentPaymentSheetManager = new PaymentSheetManager();
+  }
+
+  document.addEventListener('astro:page-load', initPaymentSheet);
+  document.addEventListener('DOMContentLoaded', initPaymentSheet);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initPaymentSheet();
+  }
+</script>

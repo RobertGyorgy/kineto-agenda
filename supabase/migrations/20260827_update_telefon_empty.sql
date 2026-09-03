@@ -1,0 +1,3 @@
+-- Migration: Nu modifica date reale. Aceasta e pentru diagnostic.
+-- Verifica daca exista pacienti cu telefon gol in baza de date:
+-- SELECT id, prenume, nume, telefon FROM public.pacienti WHERE telefon = '' OR telefon IS NULL;

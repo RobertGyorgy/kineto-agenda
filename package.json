@@ -1,0 +1,31 @@
+{
+  "name": "pwa-calendar-kineto",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@astrojs/tailwind": "^6.0.2",
+    "@astrojs/vercel": "^8.2.11",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
+    "@types/node": "^26.1.2",
+    "@types/web-push": "^3.6.4",
+    "astro": "^5.18.2",
+    "dotenv": "^16.4.5",
+    "gsap": "^3.15.0",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.5.4",
+    "web-push": "^3.6.7",
+    "ws": "^8.18.0",
+    "zod": "^4.4.3"
+  }
+}

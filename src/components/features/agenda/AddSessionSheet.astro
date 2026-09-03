@@ -1,0 +1,1560 @@
+---
+const todayStr = new Date().toISOString().split('T')[0];
+
+// Generating upcoming work dates (Monday to Friday only)
+const upcomingDates: Array<{ value: string; displayDay: string; displayDate: number }> = [];
+let dayCounter = 0;
+while (upcomingDates.length < 14 && dayCounter < 30) {
+  const d = new Date();
+  d.setDate(d.getDate() + dayCounter);
+  const dayOfWeek = d.getDay();
+  // Include only working days: Monday (1) through Friday (5)
+  if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+    upcomingDates.push({
+      value: d.toISOString().split('T')[0],
+      displayDay: upcomingDates.length === 0 && dayCounter === 0 ? 'Azi' : d.toLocaleDateString('ro-RO', { weekday: 'short' }),
+      displayDate: d.getDate()
+    });
+  }
+  dayCounter++;
+}
+---
+
+<div id="add-session-sheet" data-sheet-root class="fixed inset-0 z-[100] pointer-events-none">
+  <div id="add-session-backdrop" class="absolute inset-0 bg-black/25 pointer-events-none transition-opacity duration-300 opacity-0"></div>
+
+  <div id="add-session-content" data-sheet-content class="absolute bottom-0 left-0 right-0 bg-surface-card rounded-t-[2.5rem] p-5 pb-0 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] translate-y-full will-change-transform flex flex-col max-h-[92vh] overflow-hidden pointer-events-auto">
+    <!-- Swipe handle -->
+    <div id="add-session-drag-handle" class="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6 shrink-0 cursor-grab active:cursor-grabbing"></div>
+
+    <div class="flex-1 overflow-y-auto px-1 pb-28">
+      <div class="flex items-center justify-between mb-8">
+        <h3 id="sheet-title" class="text-2xl font-extrabold tracking-tight text-black">Programare nouă</h3>
+      </div>
+
+      <form id="add-session-form" class="space-y-7">
+        <input type="hidden" name="sessionId" id="sessionId" value="" />
+        
+        <!-- Custom Patient Picker -->
+        <div class="space-y-2">
+          <!-- Search Patient Input (Always visible) -->
+          <div class="relative">
+            <input 
+              type="text" 
+              id="search-patient-input" 
+              placeholder="Căutare pacient..." 
+              class="w-full px-6 py-4 rounded-full border-2 border-brand-secondary bg-transparent text-lg font-bold text-black focus:outline-none focus:border-brand-secondary transition-all"
+            />
+            <div class="absolute inset-y-0 right-6 flex items-center pointer-events-none">
+              <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div id="patient-list" class="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] mt-4 px-2" style="grid-template-rows: 0fr;">
+            <div class="overflow-hidden">
+              <div id="patient-list-inner" class="flex flex-col gap-3 pt-2 pb-2 overflow-y-auto max-h-[40vh]">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div id="patient-subscription-warning" class="hidden mt-3 px-4 py-3 rounded-2xl bg-brand-secondary text-black text-xs sm:text-sm font-black leading-snug uppercase tracking-wider text-center border border-transparent shadow-md">
+            Abonament terminat
+          </div>
+
+        </div>
+
+        <!-- Ședință în grup toggle -->
+        <div class="pt-2">
+          <button
+            type="button"
+            id="btn-group-session-toggle"
+            class="w-full px-6 py-3.5 rounded-2xl border-2 border-dashed border-neutral-200 bg-transparent text-sm font-bold text-neutral-600 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span id="group-toggle-label">Adaugă ca ședință în grup</span>
+          </button>
+        </div>
+
+        <!-- Date/Time Selectors (Butoane Principale) -->
+        <div id="date-time-selectors" class="space-y-3 pt-2">
+          <input type="hidden" name="selectedDate" id="selectedDate" value={todayStr} />
+          <input type="hidden" name="selectedTime" id="selectedTime" value="08:00" />
+
+          <!-- Button 1: Alege Data -->
+          <button 
+            type="button" 
+            id="btn-trigger-date-sheet"
+            class="w-full px-6 py-4 rounded-full border-2 border-brand-secondary bg-transparent text-lg font-bold text-black flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <div class="flex items-center gap-3">
+              <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <span class="text-lg font-bold text-black" id="display-date-label">Alege data</span>
+            </div>
+            <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <!-- Button 2: Alege Ora -->
+          <button 
+            type="button" 
+            id="btn-trigger-time-sheet"
+            class="w-full px-6 py-4 rounded-full border-2 border-brand-secondary bg-transparent text-lg font-bold text-black flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <div class="flex items-center gap-3">
+              <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-lg font-bold text-black" id="display-time-label">Alege ora</span>
+            </div>
+            <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Group Edit Notice -->
+        <div id="group-edit-notice" class="hidden space-y-2 pt-2">
+          <div class="px-4 py-3 rounded-2xl bg-brand-secondary/15 border border-brand-secondary/30 text-black text-sm font-black text-center">
+            Editezi grupul cu <span id="group-edit-count">0</span> pacienți
+          </div>
+        </div>
+
+        <!-- Group Location Selector (visible only for group sessions) -->
+        <div id="group-location-selector" class="hidden space-y-2 pt-2">
+          <label class="block text-sm font-black text-black uppercase tracking-wider">Locație grup</label>
+          <input type="hidden" name="groupLocation" id="groupLocation" value="Belaqva" />
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-black/5 rounded-2xl">
+            <button type="button" data-group-location="Belaqva" class="group-loc-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-brand-primary text-black shadow-sm">
+              Belaqva
+            </button>
+            <button type="button" data-group-location="Ghimbav" class="group-loc-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate bg-transparent text-text-muted hover:text-black">
+              Ghimbav
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sticky Submit Button -->
+    <div class="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-surface-card via-surface-card to-transparent pt-12">
+      <button type="submit" id="submit-btn" form="add-session-form" class="w-full py-4 rounded-full bg-brand-primary hover:brightness-105 text-black font-extrabold text-xl shadow-md shadow-amber-500/15 active:scale-95 transition-all cursor-pointer">
+        Salvează
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Time Picker Sheet (Stil Bottom Sheet identic cu Calendar) -->
+<div 
+  id="add-session-time-modal" 
+  data-sheet-root
+  class="fixed inset-x-0 bottom-0 z-[120] bg-surface-card rounded-t-[2.5rem] p-5 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] translate-y-full will-change-transform flex flex-col max-h-[92vh] overflow-hidden space-y-4"
+>
+  <!-- Swipe handle -->
+  <div id="time-modal-drag-handle" class="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-2 shrink-0 cursor-grab active:cursor-grabbing"></div>
+
+  <!-- Modal Header -->
+  <div class="flex items-center justify-between pb-2 border-b border-transparent px-1">
+    <h3 class="text-xl font-black text-text-main font-sans tracking-tight">Alege ora</h3>
+  </div>
+
+  <!-- 24H Time Preview Display -->
+  <div class="flex items-center justify-center gap-3 py-3.5 bg-surface-base/80 rounded-2xl border border-transparent shadow-inner text-text-main font-black text-4xl font-sans tracking-tight">
+    <span id="session-hour-display">08</span>
+    <span class="text-text-muted/60">:</span>
+    <span id="session-minute-display">00</span>
+  </div>
+
+  <!-- Quick Hours Grid -->
+  <div>
+    <div class="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto pr-1 py-2" id="session-hours-grid"></div>
+  </div>
+
+  <!-- Minutes Selector -->
+  <div class="space-y-1.5 pt-1">
+    <div class="text-xs font-extrabold text-text-muted font-sans uppercase tracking-wider">Minute</div>
+    <div class="grid grid-cols-4 gap-2" id="session-minutes-grid"></div>
+  </div>
+
+  <!-- Confirm Button -->
+  <div class="pt-2 mt-auto">
+    <button type="button" id="btn-confirm-session-time" class="w-full py-4 px-6 rounded-full bg-brand-primary hover:brightness-105 text-black font-extrabold text-base shadow-md shadow-amber-500/15 active:scale-95 transition-all text-center cursor-pointer">
+      Salvează
+    </button>
+  </div>
+</div>
+<div id="add-session-time-overlay" data-sheet-root class="fixed inset-0 bg-black/25 z-[115] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+<!-- Custom Date Picker Sheet -->
+<div 
+  id="custom-date-picker-sheet" 
+  data-sheet-root
+  class="fixed inset-x-0 bottom-0 z-[110] bg-surface-card rounded-t-[2.5rem] p-5 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] translate-y-full will-change-transform flex flex-col max-h-[92vh] overflow-hidden"
+>
+  <!-- Swipe handle -->
+  <div id="date-picker-drag-handle" class="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-4 shrink-0 cursor-grab active:cursor-grabbing"></div>
+
+  <div class="flex items-center justify-between mb-6 px-1">
+    <button type="button" id="date-picker-prev" class="w-10 h-10 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center active:scale-95 transition-transform">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+    </button>
+    <h3 id="date-picker-month-year" class="text-lg font-extrabold tracking-tight">August 2026</h3>
+    <button type="button" id="date-picker-next" class="w-10 h-10 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center active:scale-95 transition-transform">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+    </button>
+  </div>
+
+  <!-- Weekday labels -->
+  <div class="grid grid-cols-7 mb-2">
+    {['L','M','M','J','V','S','D'].map(d => (
+      <div class="text-center text-xs font-bold text-text-muted uppercase tracking-wider py-2">{d}</div>
+    ))}
+  </div>
+
+  <!-- Days grid -->
+  <div id="date-picker-grid" class="grid grid-cols-7 gap-1 flex-1 overflow-y-auto">
+    <!-- Populated by JS -->
+  </div>
+
+  <div class="pt-4 mt-auto">
+    <button type="button" id="date-picker-close" class="w-full py-4 rounded-full bg-brand-primary hover:brightness-105 text-black font-extrabold text-base shadow-md shadow-amber-500/15 active:scale-95 transition-all text-center cursor-pointer">
+      Salvează
+    </button>
+  </div>
+</div>
+<div id="custom-date-picker-overlay" data-sheet-root class="fixed inset-0 bg-black/25 z-[105] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+<script>
+  import { getSettings } from '../../../lib/services/settingsService';
+  import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
+
+  import { getPatients, getPatient, addPatient, updatePatient } from '../../../lib/services/patientService';
+  import { createAppointment, updateAppointment, deleteAppointment } from '../../../lib/services/appointmentService';
+  import { escapeHtml } from '../../../utils/html';
+
+  class AddSessionSheetManager {
+    sheet: HTMLElement | null;
+    content: HTMLElement | null;
+    form: HTMLFormElement | null;
+    timeInput: HTMLInputElement | null;
+    dateInput: HTMLInputElement | null;
+    overlay: HTMLElement | null = null;
+    datePickerSheet: HTMLElement | null;
+    datePickerOverlay: HTMLElement | null;
+    isOpen: boolean = false;
+    currentPickerDate: Date;
+    startY: number;
+    currentY: number;
+    startX: number = 0;
+    dragEngaged: boolean = false;
+    scrollAtTop: boolean = true;
+    settings: any;
+    currentHour: number = 8;
+    currentMin: number = 0;
+    selectedCustomHour: string = '08';
+    selectedCustomMinute: string = '00';
+    selectedPatientId: string | null = null;
+    selectedPatientIds: string[] = [];
+    isGroupSession: boolean = false;
+    isGroupEdit: boolean = false;
+    groupEditMemberIds: string[] = [];
+    groupEditMembers: { appointmentId: string; patientId: string; patientName: string }[] = [];
+    groupEditMemberCount: number = 0;
+    groupEditGroupId: string | null = null;
+    patientsCache: any[] = [];
+
+    constructor() {
+      this.sheet = document.getElementById('add-session-sheet');
+      this.content = document.getElementById('add-session-content');
+      this.overlay = document.getElementById('add-session-backdrop');
+      this.form = document.getElementById('add-session-form') as HTMLFormElement;
+      this.timeInput = document.getElementById('selectedTime') as HTMLInputElement;
+      this.dateInput = document.getElementById('selectedDate') as HTMLInputElement;
+      this.datePickerSheet = document.getElementById('custom-date-picker-sheet');
+      this.datePickerOverlay = document.getElementById('custom-date-picker-overlay');
+      this.currentPickerDate = new Date();
+      this.selectedCustomHour = '08';
+      this.selectedCustomMinute = '00';
+      this.startY = 0;
+      this.currentY = 0;
+      this.settings = null;
+      this.loadSettings();
+
+      this.bindEvents();
+      this.bindDateTimeSelectors();
+      this.bindDatePicker();
+      this.bindCustomTimeModal();
+      this.bindGroupLocation();
+
+      window.addEventListener('settingsUpdated', () => {
+        this.loadSettings();
+      });
+    }
+
+    async loadSettings() {
+      try {
+        this.settings = await getSettings();
+        this.populateDynamicContent();
+      } catch (e) {
+        console.warn('Could not load settings in AddSessionSheet:', e);
+      }
+    }
+
+    populateDynamicContent() {
+      // Populate time slots
+      const timeContainer = document.getElementById('time-slots-container');
+      if (timeContainer) {
+        timeContainer.innerHTML = '';
+        const workStartStr = this.settings?.work_start || '08:00';
+        const workEndStr   = this.settings?.work_end   || '20:00';
+
+        const startHour = parseInt(workStartStr.split(':')[0], 10) || 8;
+        const endHour   = parseInt(workEndStr.split(':')[0], 10)   || 20;
+        
+        let i = 0;
+        for (let h = startHour; h <= endHour; h++) {
+          ['00', '30'].forEach(m => {
+            if (h === endHour && m !== '00') return;
+            const timeStr = `${h.toString().padStart(2, '0')}:${m}`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.dataset.timeBtn = timeStr;
+            btn.className = `shrink-0 flex flex-col items-center justify-center px-2 py-1 transition-all duration-300 ${i === 0 ? 'text-brand-secondary' : 'text-black opacity-70 hover:opacity-100'}`;
+            btn.innerHTML = `<span class="text-xl font-extrabold">${timeStr}</span>`;
+            timeContainer.appendChild(btn);
+            i++;
+          });
+        }
+      }
+      this.populatePatients();
+    }
+
+    async populatePatients() {
+      const patientList = document.getElementById('patient-list');
+      const patientListInner = document.getElementById('patient-list-inner');
+      if (patientListInner) {
+        patientListInner.innerHTML = '<div class="p-4 text-center text-sm font-bold text-text-muted">Se încarcă pacienții…</div>';
+
+        let rawPatients: any[] = [];
+        try {
+          rawPatients = await getPatients();
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Asigură că fiecare pacient apare o SINGURĂ dată (deduplicare după ID)
+        const patients = Array.from(new Map(rawPatients.map(p => [p.id, p])).values());
+        this.patientsCache = patients;
+
+        if (patients.length === 0) {
+          patientListInner.innerHTML = '<div class="p-4 text-center text-sm font-bold text-text-muted bg-black/5 rounded-2xl">Nu s-au găsit pacienți. Te rugăm să adaugi un pacient mai întâi.</div>';
+          return;
+        }
+
+        patients.forEach((patient: any) => {
+          const catName = patient.name;
+          const patientId = patient.id;
+          const safeCatName = escapeHtml(catName);
+          const safePatientId = escapeHtml(patientId);
+          const isGhimbav = (patient.locatie || '').toLowerCase() === 'ghimbav';
+          const totalSess = patient.sedinte_total ?? 0;
+          const ramase = patient.sedinte_ramase ?? Math.max(0, totalSess - (patient.sedinte_folosite ?? 0));
+          const subscriptionDone = totalSess > 0 && ramase <= 0;
+
+          // Roz pt Ghimbav, Galben pt Belaqva
+          const colorClass = isGhimbav
+              ? 'bg-brand-secondary text-white'
+              : 'bg-brand-primary text-black';
+
+          const label = document.createElement('label');
+          label.className = 'relative cursor-pointer w-full';
+
+          const inputType = this.isGroupSession ? 'checkbox' : 'radio';
+          label.innerHTML = `
+            <input type="${inputType}" name="patientId" value="${safePatientId}" data-patient-name="${safeCatName}" data-color-class="${colorClass}" data-sessions-left="${ramase}" data-total-sessions="${totalSess}" class="peer sr-only" />
+            <div class="px-6 py-4 rounded-[1.5rem] font-bold text-lg transition-opacity flex items-center justify-between ${colorClass}">
+              <div class="flex flex-col min-w-0">
+                <span>${safeCatName}</span>
+                ${subscriptionDone ? `<span class="text-[10px] font-black uppercase tracking-wider opacity-90 truncate">Abonament terminat — reînnoiește</span>` : ''}
+              </div>
+              <div class="w-6 h-6 rounded-full border-2 border-current opacity-0 peer-checked:opacity-100 flex items-center justify-center transition-opacity shrink-0">
+                <div class="w-3 h-3 rounded-full bg-current"></div>
+              </div>
+            </div>
+          `;
+          patientListInner.appendChild(label);
+        });
+
+        // Re-bind change listeners for new radios/checkboxes
+        const patientInputs = this.form?.querySelectorAll('input[name="patientId"]');
+        const settingsContainer = document.getElementById('settings-container');
+
+        patientInputs?.forEach(input => {
+          input.addEventListener('change', (e: any) => {
+            if (this.isGroupSession) {
+              // Mod grup: checkbox — colectează toți pacienții selectați
+              const checked = this.form?.querySelectorAll('input[name="patientId"]:checked') as NodeListOf<HTMLInputElement>;
+              this.selectedPatientIds = Array.from(checked).map(r => r.value);
+              this.selectedPatientId = this.selectedPatientIds[0] || null;
+
+              const searchInput = document.getElementById('search-patient-input') as HTMLInputElement;
+              if (searchInput && this.selectedPatientIds.length > 0) {
+                const names = Array.from(checked).map(r => r.getAttribute('data-patient-name') || '').filter(Boolean);
+                searchInput.value = names.join(', ');
+              }
+
+              settingsContainer?.classList.remove('hidden');
+              settingsContainer?.classList.add('flex');
+            } else {
+              // Mod individual: radio — un singur pacient
+              if (e.target.checked) {
+                this.selectedPatientId = e.target.value;
+                this.selectedPatientIds = [e.target.value];
+                const searchInput = document.getElementById('search-patient-input') as HTMLInputElement;
+                if (searchInput) {
+                  searchInput.value = e.target.getAttribute('data-patient-name') || '';
+                }
+                const selectedPatientNameSpan = document.getElementById('selected-patient-name');
+                if (selectedPatientNameSpan) {
+                  selectedPatientNameSpan.textContent = e.target.getAttribute('data-patient-name') || 'Pacient';
+                }
+
+                // Afișează avertismentul dacă pacientul și-a terminat ședințele
+                const sessionsLeft = parseInt(e.target.getAttribute('data-sessions-left') || '0', 10);
+                const totalSessions = parseInt(e.target.getAttribute('data-total-sessions') || '0', 10);
+                const subscriptionWarning = document.getElementById('patient-subscription-warning');
+                if (subscriptionWarning) {
+                  if (totalSessions > 0 && sessionsLeft <= 0) {
+                    subscriptionWarning.classList.remove('hidden');
+                  } else {
+                    subscriptionWarning.classList.add('hidden');
+                  }
+                }
+
+                if (patientList) patientList.style.gridTemplateRows = '0fr';
+
+                settingsContainer?.classList.remove('hidden');
+                settingsContainer?.classList.add('flex');
+              }
+            }
+          });
+        });
+      }
+    }
+
+    updateCustomTimeDisplay(totalMinutes: number) {
+      const clamped = Math.max(360, Math.min(1320, totalMinutes));
+      const h = Math.floor(clamped / 60);
+      const m = clamped % 60;
+
+      this.currentHour = h;
+      this.currentMin = m;
+
+      const hourStr = h.toString().padStart(2, '0');
+      const minStr = m.toString().padStart(2, '0');
+      const fullTimeStr = `${hourStr}:${minStr}`;
+
+      const sliderTimeDisplay = document.getElementById('slider-time-display');
+      const badgePreview = document.getElementById('custom-time-badge-preview');
+      const displayTime = document.getElementById('display-selected-time');
+      const rangeSlider = document.getElementById('time-range-slider') as HTMLInputElement;
+
+      if (sliderTimeDisplay) sliderTimeDisplay.textContent = fullTimeStr;
+      if (badgePreview) badgePreview.textContent = fullTimeStr;
+      if (displayTime) displayTime.textContent = fullTimeStr;
+      if (rangeSlider) rangeSlider.value = clamped.toString();
+      if (this.timeInput) this.timeInput.value = fullTimeStr;
+
+      // Update minute chips highlighting
+      const minChips = document.querySelectorAll<HTMLButtonElement>('[data-min-chip]');
+      minChips.forEach(chip => {
+        if (chip.dataset.minChip === minStr) {
+          chip.classList.add('bg-black', 'text-white', 'border-black');
+          chip.classList.remove('bg-white', 'text-black', 'border-transparent');
+        } else {
+          chip.classList.remove('bg-black', 'text-white', 'border-black');
+          chip.classList.add('bg-white', 'text-black', 'border-transparent');
+        }
+      });
+    }
+    
+    bindDateTimeSelectors() {
+      const container = document.getElementById('date-time-selectors');
+      if (!container || container.dataset.addSessionDateTimeBound === 'true') return;
+      container.dataset.addSessionDateTimeBound = 'true';
+
+      const dateBtns = document.querySelectorAll<HTMLButtonElement>('[data-date-btn]');
+      const timeBtns = document.querySelectorAll<HTMLButtonElement>('[data-time-btn]');
+      const nativeDatePicker = document.getElementById('native-date-picker') as HTMLInputElement;
+      const otherDateBtn = document.getElementById('other-date-btn');
+
+      const nativeTimePicker = document.getElementById('native-time-picker') as HTMLInputElement;
+      const timeScrollLeftBtn = document.getElementById('time-scroll-left');
+      const timeSlotsContainer = document.getElementById('time-slots-container');
+
+      dateBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          dateBtns.forEach(b => {
+            b.classList.remove('text-brand-secondary');
+            b.classList.add('text-black', 'opacity-70');
+          });
+          
+          if (otherDateBtn) {
+             otherDateBtn.classList.remove('text-brand-secondary');
+             otherDateBtn.classList.add('text-black');
+          }
+          
+          btn.classList.add('text-brand-secondary');
+          btn.classList.remove('text-black', 'opacity-70');
+          
+          if (this.dateInput) this.dateInput.value = btn.dataset.dateBtn || '';
+          
+          btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        });
+      });
+      
+      if (nativeDatePicker && otherDateBtn) {
+         // Nu mai e nevoie de schimbat selectedVal pt nativeDatePicker (date picker e custom sheet momentan pt alte zile, 
+         // dar dacă se folosește native-date-picker, păstrăm logica)
+         nativeDatePicker.addEventListener('change', (e: any) => {
+             const selectedVal = e.target.value;
+             if (!selectedVal) return;
+             
+             dateBtns.forEach(b => {
+                b.classList.remove('text-brand-secondary');
+                b.classList.add('text-black', 'opacity-70');
+             });
+             
+             otherDateBtn.classList.add('text-brand-secondary');
+             otherDateBtn.classList.remove('text-black');
+             
+             if (this.dateInput) this.dateInput.value = selectedVal;
+             
+             otherDateBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+         });
+      }
+
+      otherDateBtn?.addEventListener('click', () => {
+        this.openDatePicker();
+      });
+
+      // ---- TIME SELECTORS LOGIC ----
+      
+      timeScrollLeftBtn?.addEventListener('click', () => {
+        if (timeSlotsContainer) {
+          timeSlotsContainer.scrollBy({ left: -100, behavior: 'smooth' });
+        }
+      });
+
+      timeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.selectTime(btn.dataset.timeBtn || '08:00');
+        });
+      });
+    }
+    
+    selectDate(dateStr: string) {
+      if (!dateStr || !this.dateInput) return;
+      const parsed = new Date(dateStr + 'T00:00:00');
+      if (!isNaN(parsed.getTime()) && (parsed.getDay() === 0 || parsed.getDay() === 6)) {
+        return; // Weekend is not allowed for appointments
+      }
+      this.dateInput.value = dateStr;
+
+      const dateLabel = document.getElementById('display-date-label');
+      if (dateLabel) {
+        const parsed = new Date(dateStr + 'T00:00:00');
+        if (!isNaN(parsed.getTime())) {
+          const weekday = parsed.toLocaleDateString('ro-RO', { weekday: 'long' });
+          const monthName = parsed.toLocaleDateString('ro-RO', { month: 'long' });
+          const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+          const formatted = `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${parsed.getDate()} ${capitalizedMonth}`;
+          dateLabel.textContent = formatted;
+        } else {
+          dateLabel.textContent = dateStr;
+        }
+      }
+    }
+
+    selectTime(timeStr: string) {
+      if (!timeStr || !this.timeInput) return;
+      this.timeInput.value = timeStr;
+
+      const timeLabel = document.getElementById('display-time-label');
+      if (timeLabel) {
+        timeLabel.textContent = timeStr;
+      }
+    }
+
+    bindDatePicker() {
+      if (!this.datePickerSheet || this.datePickerSheet.dataset.addSessionDatePickerBound === 'true') return;
+      this.datePickerSheet.dataset.addSessionDatePickerBound = 'true';
+
+      const prevBtn = document.getElementById('date-picker-prev');
+      const nextBtn = document.getElementById('date-picker-next');
+      const closeBtn = document.getElementById('date-picker-close');
+      const triggerBtn = document.getElementById('btn-trigger-date-sheet');
+
+      triggerBtn?.addEventListener('click', () => this.openDatePicker());
+
+      prevBtn?.addEventListener('click', () => {
+        this.currentPickerDate.setMonth(this.currentPickerDate.getMonth() - 1);
+        this.renderDatePicker();
+      });
+
+      nextBtn?.addEventListener('click', () => {
+        this.currentPickerDate.setMonth(this.currentPickerDate.getMonth() + 1);
+        this.renderDatePicker();
+      });
+
+      closeBtn?.addEventListener('click', () => (window as any).currentAddSessionSheetManager?.closeDatePicker());
+      this.datePickerOverlay?.addEventListener('click', () => (window as any).currentAddSessionSheetManager?.closeDatePicker());
+
+      // Dedicated drag handle close
+      const dragHandle = document.getElementById('date-picker-drag-handle');
+      if (dragHandle) {
+        this.bindHandleSwipe(dragHandle, () => this.closeDatePicker());
+      }
+
+      // Swipe-down to close from anywhere on the sheet
+      let startY = 0;
+      let dragging = false;
+      this.datePickerSheet?.addEventListener('touchstart', (e: any) => {
+        startY = e.touches[0].clientY;
+        dragging = true;
+        if (this.datePickerSheet) this.datePickerSheet.style.transition = 'none';
+      }, { passive: true });
+      this.datePickerSheet?.addEventListener('touchmove', (e: any) => {
+        if (!dragging) return;
+        const deltaY = e.touches[0].clientY - startY;
+        if (deltaY > 0 && this.datePickerSheet) {
+          this.datePickerSheet.style.transform = `translateY(${deltaY}px)`;
+        }
+      }, { passive: true });
+      const onDateTouchEnd = (e: any) => {
+        dragging = false;
+        const deltaY = (e.changedTouches[0].clientY || 0) - startY;
+        if (this.datePickerSheet) {
+          this.datePickerSheet.style.transition = 'transform 400ms cubic-bezier(0.32, 0.72, 0, 1)';
+          if (deltaY > 100) {
+            this.closeDatePicker();
+          } else {
+            this.datePickerSheet.style.transform = 'translateY(0)';
+          }
+        }
+      };
+      this.datePickerSheet?.addEventListener('touchend', onDateTouchEnd);
+      this.datePickerSheet?.addEventListener('touchcancel', onDateTouchEnd);
+    }
+
+    openDatePicker() {
+      const selectedValue = this.dateInput?.value;
+      if (selectedValue) {
+        const parsed = new Date(selectedValue + 'T00:00:00');
+        if (!isNaN(parsed.getTime())) {
+          this.currentPickerDate = parsed;
+        }
+      }
+      this.renderDatePicker();
+      if (this.datePickerSheet && this.datePickerOverlay) {
+        this.datePickerSheet.dataset.open = 'true';
+        this.datePickerOverlay.dataset.open = 'true';
+        this.datePickerSheet.classList.add('translate-y-full');
+        void this.datePickerSheet.offsetWidth;
+        this.datePickerSheet.classList.remove('translate-y-full');
+        this.datePickerOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    closeDatePicker() {
+      if (this.datePickerSheet && this.datePickerOverlay) {
+        this.datePickerSheet.style.transform = '';
+        this.datePickerSheet.classList.add('translate-y-full');
+        this.datePickerOverlay.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          if (this.datePickerSheet) this.datePickerSheet.dataset.open = 'false';
+          if (this.datePickerOverlay) this.datePickerOverlay.dataset.open = 'false';
+        }, 500);
+      }
+    }
+
+    renderDatePicker() {
+      const grid = document.getElementById('date-picker-grid');
+      const monthYear = document.getElementById('date-picker-month-year');
+      if (!grid || !monthYear) return;
+
+      const year = this.currentPickerDate.getFullYear();
+      const month = this.currentPickerDate.getMonth();
+      const monthName = this.currentPickerDate.toLocaleDateString('ro-RO', { month: 'long' });
+      monthYear.textContent = `${monthName} ${year}`;
+
+      const firstDayOfMonth = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; // Monday-first
+
+      const selectedValue = this.dateInput?.value;
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      grid.innerHTML = '';
+
+      // Empty cells for offset
+      for (let i = 0; i < startOffset; i++) {
+        const empty = document.createElement('div');
+        grid.appendChild(empty);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month, d);
+        const dayOfWeek = dateObj.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+        const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+        const isSelected = dateStr === selectedValue;
+        const isToday = dateStr === todayStr;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        
+        if (isWeekend) {
+          btn.disabled = true;
+          btn.className = 'aspect-square rounded-2xl text-sm font-extrabold bg-black/5 text-black/30 pointer-events-none cursor-not-allowed';
+          btn.style.backgroundImage = 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.06) 4px, rgba(0,0,0,0.06) 8px)';
+        } else {
+          btn.className = `aspect-square rounded-2xl text-sm font-extrabold transition-all active:scale-95 ${
+            isSelected
+              ? 'bg-black text-white shadow-lg'
+              : isToday
+                ? 'bg-brand-primary text-black'
+                : 'bg-black/5 text-black hover:bg-black/10'
+          }`;
+          btn.addEventListener('click', () => {
+            this.selectDate(dateStr);
+            this.closeDatePicker();
+          });
+        }
+        
+        btn.textContent = d.toString();
+        grid.appendChild(btn);
+      }
+    }
+
+    openCustomTimeModal() {
+      const modal = document.getElementById('add-session-time-modal');
+      const overlay = document.getElementById('add-session-time-overlay');
+      if (!modal) return;
+
+      const currentVal = this.timeInput?.value || '08:00';
+      const parts = currentVal.split(':');
+      this.selectedCustomHour = parts[0] || '08';
+      this.selectedCustomMinute = parts[1] || '00';
+
+      const hd = document.getElementById('session-hour-display');
+      const md = document.getElementById('session-minute-display');
+      if (hd) hd.textContent = this.selectedCustomHour;
+      if (md) md.textContent = this.selectedCustomMinute;
+
+      this.renderTimeGrids();
+
+      modal.dataset.open = 'true';
+      if (overlay) overlay.dataset.open = 'true';
+      modal.classList.add('translate-y-full');
+      void modal.offsetWidth;
+      modal.classList.remove('translate-y-full');
+      overlay?.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    renderTimeGrids() {
+      const hoursGrid = document.getElementById('session-hours-grid');
+      const minutesGrid = document.getElementById('session-minutes-grid');
+      const hoursList = ['08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'];
+      const minutesList = ['00','15','30','45'];
+
+      if (hoursGrid) {
+        hoursGrid.innerHTML = '';
+        hoursList.forEach(h => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isSel = h === this.selectedCustomHour;
+          btn.className = `py-2 rounded-xl font-extrabold text-sm transition-all ${
+            isSel ? 'bg-brand-secondary text-white shadow-sm scale-105' : 'bg-surface-base hover:bg-brand-primary/30 text-text-main'
+          }`;
+          btn.textContent = h;
+          btn.addEventListener('click', () => {
+            this.selectedCustomHour = h;
+            const hd = document.getElementById('session-hour-display');
+            if (hd) hd.textContent = h;
+            this.renderTimeGrids();
+          });
+          hoursGrid.appendChild(btn);
+        });
+      }
+      
+      if (minutesGrid) {
+        minutesGrid.innerHTML = '';
+        minutesList.forEach(m => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isSel = m === this.selectedCustomMinute;
+          btn.className = `py-2 rounded-xl font-extrabold text-sm transition-all ${
+            isSel ? 'bg-brand-secondary text-white shadow-sm scale-105' : 'bg-surface-base hover:bg-brand-primary/30 text-text-main'
+          }`;
+          btn.textContent = m;
+          btn.addEventListener('click', () => {
+            this.selectedCustomMinute = m;
+            const md = document.getElementById('session-minute-display');
+            if (md) md.textContent = m;
+            this.renderTimeGrids();
+          });
+          minutesGrid.appendChild(btn);
+        });
+      }
+    }
+
+    closeCustomTimeModal() {
+      const modal = document.getElementById('add-session-time-modal');
+      const overlay = document.getElementById('add-session-time-overlay');
+      if (!modal) return;
+      modal.style.transform = '';
+      modal.classList.add('translate-y-full');
+      overlay?.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        modal.dataset.open = 'false';
+        if (overlay) overlay.dataset.open = 'false';
+      }, 500);
+    }
+
+    // --- Custom Time Modal Logic ---
+    bindCustomTimeModal() {
+      const modal = document.getElementById('add-session-time-modal');
+      if (!modal || modal.dataset.addSessionTimeModalBound === 'true') return;
+      modal.dataset.addSessionTimeModalBound = 'true';
+
+      const btnOpen = document.getElementById('btn-open-session-time');
+      const btnTimeSheet = document.getElementById('btn-trigger-time-sheet');
+      const btnConfirm = document.getElementById('btn-confirm-session-time');
+
+      const closeModal = () => (window as any).currentAddSessionSheetManager?.closeCustomTimeModal();
+
+      if (btnOpen) {
+        btnOpen.addEventListener('click', () => (window as any).currentAddSessionSheetManager?.openCustomTimeModal());
+      }
+      if (btnTimeSheet) {
+        btnTimeSheet.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          (window as any).currentAddSessionSheetManager?.openCustomTimeModal();
+        });
+      }
+      const timeOverlay = document.getElementById('add-session-time-overlay');
+      if (timeOverlay) {
+        timeOverlay.addEventListener('click', closeModal);
+      }
+
+      // Dedicated drag handle close
+      const dragHandle = document.getElementById('time-modal-drag-handle');
+      if (dragHandle) {
+        this.bindHandleSwipe(dragHandle, closeModal);
+      }
+
+      // Swipe down to close for time sheet
+      let timeStartY = 0;
+      let timeDragging = false;
+      modal?.addEventListener('touchstart', (e: any) => {
+        timeStartY = e.touches[0].clientY;
+        timeDragging = true;
+        if (modal) modal.style.transition = 'none';
+      }, { passive: true });
+      modal?.addEventListener('touchmove', (e: any) => {
+        if (!timeDragging) return;
+        const deltaY = e.touches[0].clientY - timeStartY;
+        if (deltaY > 0 && modal) {
+          modal.style.transform = `translateY(${deltaY}px)`;
+        }
+      }, { passive: true });
+      const onTimeTouchEnd = (e: any) => {
+        timeDragging = false;
+        const deltaY = (e.changedTouches[0].clientY || 0) - timeStartY;
+        if (modal) {
+          modal.style.transition = 'transform 400ms cubic-bezier(0.32, 0.72, 0, 1)';
+          if (deltaY > 100) {
+            closeModal();
+          } else {
+            modal.style.transform = 'translateY(0)';
+          }
+        }
+      };
+      modal?.addEventListener('touchend', onTimeTouchEnd);
+      modal?.addEventListener('touchcancel', onTimeTouchEnd);
+
+      btnConfirm?.addEventListener('click', () => {
+        const timeStr = `${this.selectedCustomHour}:${this.selectedCustomMinute}`;
+        this.selectTime(timeStr);
+        closeModal();
+      });
+    }
+
+    toggleGroupMode() {
+      this.isGroupSession = !this.isGroupSession;
+      const btn = document.getElementById('btn-group-session-toggle');
+      const label = document.getElementById('group-toggle-label');
+
+      if (btn && label) {
+        if (this.isGroupSession) {
+          btn.className = 'w-full px-6 py-3.5 rounded-2xl border-2 border-brand-secondary bg-brand-secondary/10 text-sm font-bold text-black flex items-center justify-center gap-2 transition-all active:scale-[0.98]';
+          label.textContent = 'Ședință în grup activă';
+        } else {
+          btn.className = 'w-full px-6 py-3.5 rounded-2xl border-2 border-dashed border-neutral-200 bg-transparent text-sm font-bold text-neutral-600 flex items-center justify-center gap-2 transition-all active:scale-[0.98]';
+          label.textContent = 'Adaugă ca ședință în grup';
+        }
+      }
+
+      // Resetează selecțiile și re-randează pacienții
+      this.selectedPatientIds = [];
+      this.selectedPatientId = null;
+      const searchInput = document.getElementById('search-patient-input') as HTMLInputElement;
+      if (searchInput) searchInput.value = '';
+
+      // Arată/ascunde selectorul de locație pentru grup
+      const locSelector = document.getElementById('group-location-selector');
+      if (locSelector) {
+        if (this.isGroupSession) {
+          locSelector.classList.remove('hidden');
+        } else {
+          locSelector.classList.add('hidden');
+        }
+      }
+
+      this.populatePatients();
+    }
+
+    bindGroupLocation() {
+      const container = document.getElementById('group-location-selector');
+      if (!container || container.dataset.groupLocBound === 'true') return;
+      container.dataset.groupLocBound = 'true';
+
+      const hidden = document.getElementById('groupLocation') as HTMLInputElement | null;
+      const buttons = container.querySelectorAll<HTMLButtonElement>('[data-group-location]');
+
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const loc = btn.getAttribute('data-group-location') || 'Belaqva';
+          if (hidden) hidden.value = loc;
+
+          buttons.forEach(b => {
+            const isSel = b === btn;
+            b.className = isSel
+              ? 'group-loc-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-brand-primary text-black shadow-sm'
+              : 'group-loc-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate bg-transparent text-text-muted hover:text-black';
+          });
+        });
+      });
+    }
+
+    async handleSubmit(e?: Event) {
+      if (e) e.preventDefault();
+
+      const formData = this.form ? new FormData(this.form) : null;
+      const sessionIdInput = document.getElementById('sessionId') as HTMLInputElement | null;
+      const sessionId = sessionIdInput?.value || (formData?.get('sessionId') as string) || '';
+
+      const patientRadio = this.form?.querySelector('input[name="patientId"]:checked') as HTMLInputElement | null;
+      const patientId = this.selectedPatientId || patientRadio?.value || (formData?.get('patientId') as string) || '';
+
+      const timeVal = (document.getElementById('selectedTime') as HTMLInputElement)?.value;
+      const dateVal = (document.getElementById('selectedDate') as HTMLInputElement)?.value;
+
+      const selectedTime = timeVal || (formData?.get('selectedTime') as string) || '08:00';
+      const selectedDate = dateVal || (formData?.get('selectedDate') as string) || new Date().toISOString().split('T')[0];
+
+      const patientIds = this.isGroupSession
+        ? this.selectedPatientIds
+        : [patientId].filter(Boolean);
+
+      if (patientIds.length === 0) {
+        (window as any).showToast('Te rugăm să selectezi cel puțin un pacient din listă.', 'warning', 'Pacient neselectat');
+        return;
+      }
+
+      // Check Lunch Break overlap from dynamic settings
+      const currentSettings = (await getSettings()) as any;
+      const selectedDateObj = new Date(selectedDate + 'T00:00:00');
+      const selectedDayOfWeek = selectedDateObj.getDay();
+      const dayKey = String(selectedDayOfWeek);
+      const lunchBreaks = (currentSettings.lunch_breaks || {}) as Record<string, { start: string; end: string }>;
+      const customLunch = lunchBreaks[dayKey];
+      const lunchStart = (customLunch?.start || currentSettings.lunch_start || '12:00').substring(0, 5);
+      const lunchEnd = (customLunch?.end || currentSettings.lunch_end || '12:30').substring(0, 5);
+
+      const [lsh, lsm] = lunchStart.split(':').map(Number);
+      const [leh, lem] = lunchEnd.split(':').map(Number);
+      const lunchStartMin = (lsh || 0) * 60 + (lsm || 0);
+      const lunchEndMin = (leh || 0) * 60 + (lem || 0);
+
+      const [sth, stm] = selectedTime.split(':').map(Number);
+      const sessionDuration = currentSettings.session_duration || 50;
+      const sessionStartMin = (sth || 0) * 60 + (stm || 0);
+      const sessionEndMin = sessionStartMin + sessionDuration;
+
+      const isLunchOverlap = (sessionStartMin < lunchEndMin) && (sessionEndMin > lunchStartMin);
+      if (isLunchOverlap) {
+        const proceed = window.confirm(
+          `Ora ${selectedTime} se suprapune cu pauza de masă (${lunchStart} - ${lunchEnd}).\n\nDorești să programezi oricum?`
+        );
+        if (!proceed) return;
+      }
+
+      const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Se salvează…';
+      }
+
+      try {
+        if (this.isGroupEdit && this.groupEditMemberIds.length > 0) {
+          const groupLocInput = document.getElementById('groupLocation') as HTMLInputElement | null;
+          const groupLocation = (groupLocInput?.value || 'Belaqva') as 'Belaqva' | 'Ghimbav';
+
+          const newPatientIds = this.selectedPatientIds;
+          const existingMembers = this.groupEditMembers;
+          const existingPatientIds = new Set(existingMembers.map(m => m.patientId));
+
+          if (newPatientIds.length === 0) {
+            (window as any).showToast('Grupul trebuie să aibă cel puțin un pacient.', 'warning');
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Salvează Modificările';
+            }
+            return;
+          }
+
+          // Ensure a real group_id exists for the edited group.
+          const groupId = this.groupEditGroupId && !this.groupEditGroupId.startsWith('time_group_')
+            ? this.groupEditGroupId
+            : crypto.randomUUID();
+
+          const membersToRemove = existingMembers.filter(m => !newPatientIds.includes(m.patientId));
+          const membersToKeep = existingMembers.filter(m => newPatientIds.includes(m.patientId));
+          const patientIdsToAdd = newPatientIds.filter(pid => !existingPatientIds.has(pid));
+
+          await Promise.all(membersToRemove.map(m => deleteAppointment(m.appointmentId)));
+          await Promise.all(membersToKeep.map(m =>
+            updateAppointment(m.appointmentId, { data: selectedDate, ora: selectedTime, locatie: groupLocation, group_id: groupId })
+          ));
+          for (const pid of patientIdsToAdd) {
+            await createAppointment({
+              pacient_id: pid,
+              data: selectedDate,
+              ora: selectedTime,
+              locatie: groupLocation,
+              group_id: groupId,
+            });
+          }
+
+          const changedCount = membersToRemove.length + patientIdsToAdd.length;
+          const message = changedCount > 0
+            ? `Grup actualizat. ${membersToKeep.length} pacienți păstrați, ${membersToRemove.length} eliminați, ${patientIdsToAdd.length} adăugați.`
+            : 'Grupul a fost actualizat cu succes.';
+          (window as any).showToast(message, 'success');
+        } else if (sessionId) {
+          await updateAppointment(sessionId, {
+            pacient_id: patientId,
+            data: selectedDate,
+            ora: selectedTime,
+          });
+          (window as any).showToast('Programarea a fost modificată cu succes.', 'success');
+        } else {
+          const groupId = this.isGroupSession ? crypto.randomUUID() : null;
+          const groupLocInput = document.getElementById('groupLocation') as HTMLInputElement | null;
+          const groupLocation = (groupLocInput?.value || 'Belaqva') as 'Belaqva' | 'Ghimbav';
+
+          for (const pid of patientIds) {
+            const p = this.patientsCache.find(x => x.id === pid);
+            const locatie = this.isGroupSession ? groupLocation : (p?.locatie || 'Belaqva');
+            await createAppointment({
+              pacient_id: pid,
+              data: selectedDate,
+              ora: selectedTime,
+              locatie: locatie as 'Belaqva' | 'Ghimbav',
+              group_id: groupId,
+            });
+          }
+
+          if (this.isGroupSession && patientIds.length > 1) {
+            (window as any).showToast(`Ședință în grup creată pentru ${patientIds.length} pacienți.`, 'success');
+          } else {
+            (window as any).showToast('Programarea a fost salvată cu succes.', 'success');
+          }
+        }
+
+        window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+        this.close();
+      } catch (err: any) {
+        (window as any).showToast('Eroare la salvarea programării: ' + (err.message || err), 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = sessionId ? 'Salvează Modificările' : 'Salvează programarea';
+        }
+      }
+    }
+
+    async handleOpenEvent(e: any) {
+      const detail = e.detail || {};
+      const isEdit = !!detail.isEdit;
+      const isGroupEdit = !!detail.isGroupEdit;
+      const session = detail.session;
+      const timeStr = detail.time || session?.selectedTime || '08:00';
+      const dateStr = detail.date || session?.selectedDate;
+      const patientName = detail.patientName || session?.patientName;
+      let effectiveDate = dateStr || (window as any).currentCalendarDate || new Date().toISOString().split('T')[0];
+      const effDateObj = new Date(effectiveDate + 'T00:00:00');
+      if (!isNaN(effDateObj.getTime())) {
+        if (effDateObj.getDay() === 6) { // Saturday -> Monday
+          effDateObj.setDate(effDateObj.getDate() + 2);
+          effectiveDate = effDateObj.toISOString().split('T')[0];
+        } else if (effDateObj.getDay() === 0) { // Sunday -> Monday
+          effDateObj.setDate(effDateObj.getDate() + 1);
+          effectiveDate = effDateObj.toISOString().split('T')[0];
+        }
+      }
+
+      this.isGroupEdit = isGroupEdit;
+      this.groupEditMemberIds = isGroupEdit ? (detail.memberIds || []) : [];
+      this.groupEditMembers = isGroupEdit ? (detail.members || []) : [];
+      this.groupEditMemberCount = isGroupEdit ? this.groupEditMemberIds.length : 0;
+      this.groupEditGroupId = isGroupEdit ? (detail.groupId || null) : null;
+
+      const titleEl = document.getElementById('sheet-title');
+      const submitBtnEl = document.getElementById('submit-btn');
+      const sessionIdInput = document.getElementById('sessionId') as HTMLInputElement;
+      const dateTimeContainer = document.getElementById('date-time-selectors');
+      const groupEditNotice = document.getElementById('group-edit-notice');
+      const groupEditCount = document.getElementById('group-edit-count');
+      const patientSearchWrap = document.getElementById('search-patient-input')?.parentElement;
+      const groupToggleBtn = document.getElementById('btn-group-session-toggle');
+
+      if (sessionIdInput) {
+        sessionIdInput.value = isEdit && session ? session.id : '';
+      }
+
+      const locSelector = document.getElementById('group-location-selector');
+
+      if (isGroupEdit) {
+        if (titleEl) titleEl.textContent = 'Editează grupul';
+        if (submitBtnEl) submitBtnEl.textContent = 'Salvează Modificările';
+        if (groupEditNotice) groupEditNotice.classList.remove('hidden');
+        if (groupEditCount) groupEditCount.textContent = String(this.groupEditMemberCount);
+        // Keep patient picker visible so the user can add/remove group members.
+        if (patientSearchWrap) patientSearchWrap.classList.remove('hidden');
+        if (groupToggleBtn) groupToggleBtn.classList.add('hidden');
+        if (locSelector) locSelector.classList.remove('hidden');
+        this.isGroupSession = true;
+      } else if (isEdit) {
+        if (titleEl) titleEl.textContent = 'Editează programarea';
+        if (submitBtnEl) submitBtnEl.textContent = 'Salvează Modificările';
+        if (groupEditNotice) groupEditNotice.classList.add('hidden');
+        if (patientSearchWrap) patientSearchWrap.classList.remove('hidden');
+        if (groupToggleBtn) groupToggleBtn.classList.remove('hidden');
+      } else {
+        if (titleEl) titleEl.textContent = 'Programare nouă';
+        if (submitBtnEl) submitBtnEl.textContent = 'Salvează';
+        if (groupEditNotice) groupEditNotice.classList.add('hidden');
+        if (patientSearchWrap) patientSearchWrap.classList.remove('hidden');
+        if (groupToggleBtn) groupToggleBtn.classList.remove('hidden');
+        if (locSelector && !this.isGroupSession) locSelector.classList.add('hidden');
+      }
+
+      dateTimeContainer?.classList.remove('hidden');
+
+      if (timeStr) this.selectTime(timeStr);
+      if (effectiveDate) this.selectDate(effectiveDate);
+
+      // Set group location if provided
+      const groupLocInput = document.getElementById('groupLocation') as HTMLInputElement | null;
+      if (isGroupEdit && detail.location && groupLocInput) {
+        groupLocInput.value = detail.location;
+        locSelector?.querySelectorAll('[data-group-location]').forEach((btn) => {
+          const el = btn as HTMLButtonElement;
+          const isSel = el.dataset.groupLocation === detail.location;
+          el.className = isSel
+            ? 'group-loc-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all text-center truncate bg-brand-primary text-black shadow-sm'
+            : 'group-loc-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center truncate bg-transparent text-text-muted hover:text-black';
+        });
+      }
+
+      // Reset patient selector state
+      const pList = document.getElementById('patient-list');
+      const searchInput = document.getElementById('search-patient-input') as HTMLInputElement;
+      const settingsContainer = document.getElementById('settings-container');
+
+      const patientRadios = this.form?.querySelectorAll('input[name="patientId"]') as NodeListOf<HTMLInputElement>;
+      patientRadios?.forEach(r => r.checked = false);
+      this.selectedPatientId = null;
+
+      if (patientName) {
+        const matchingRadio = Array.from(patientRadios || []).find(r =>
+          r.getAttribute('data-patient-name') === patientName || r.value === patientName
+        );
+        if (matchingRadio) {
+          matchingRadio.checked = true;
+          this.selectedPatientId = matchingRadio.value;
+          matchingRadio.dispatchEvent(new Event('change'));
+        }
+      }
+
+      if (!patientName) {
+        if (searchInput) searchInput.value = '';
+        if (pList) pList.style.gridTemplateRows = '0fr';
+        if (settingsContainer) {
+          settingsContainer.classList.add('hidden');
+          settingsContainer.classList.remove('flex');
+        }
+      }
+
+      if (isEdit && session) {
+        const recurringCb = this.form?.querySelector('input[name="recurring"]') as HTMLInputElement;
+        const reminderCb = this.form?.querySelector('input[name="reminder"]') as HTMLInputElement;
+        if (recurringCb) recurringCb.checked = !!session.recurring;
+        if (reminderCb) reminderCb.checked = !!session.reminder;
+      }
+
+      // Open the sheet immediately for smooth feedback
+      this.open();
+
+      // Load patients in the background, then pre-select if a name was provided
+      await this.populatePatients();
+
+      if (isGroupEdit && this.groupEditMembers.length > 0) {
+        const refreshedInputs = this.form?.querySelectorAll('input[name="patientId"]') as NodeListOf<HTMLInputElement>;
+        const memberPatientIds = new Set(this.groupEditMembers.map(m => m.patientId));
+        refreshedInputs?.forEach(input => {
+          input.checked = memberPatientIds.has(input.value);
+        });
+        const checked = this.form?.querySelectorAll('input[name="patientId"]:checked') as NodeListOf<HTMLInputElement>;
+        this.selectedPatientIds = Array.from(checked).map(r => r.value);
+        this.selectedPatientId = this.selectedPatientIds[0] || null;
+
+        const searchInput = document.getElementById('search-patient-input') as HTMLInputElement;
+        const patientList = document.getElementById('patient-list');
+        if (searchInput && this.selectedPatientIds.length > 0) {
+          const names = Array.from(checked).map(r => r.getAttribute('data-patient-name') || '').filter(Boolean);
+          searchInput.value = names.join(', ');
+        }
+        if (patientList) patientList.style.gridTemplateRows = '1fr';
+      } else if (patientName) {
+        const refreshedRadios = this.form?.querySelectorAll('input[name="patientId"]') as NodeListOf<HTMLInputElement>;
+        const matchingRadio = Array.from(refreshedRadios || []).find(r =>
+          r.getAttribute('data-patient-name') === patientName || r.value === patientName
+        );
+        if (matchingRadio) {
+          matchingRadio.checked = true;
+          this.selectedPatientId = matchingRadio.value;
+          matchingRadio.dispatchEvent(new Event('change'));
+        }
+      }
+    }
+
+    bindEvents() {
+      if (!this.content) return;
+      if (this.content.dataset.addSessionEventsBound === 'true') return;
+      this.content.dataset.addSessionEventsBound = 'true';
+
+      // Swipe-down to dismiss from anywhere on the sheet — only engages on a
+      // clearly vertical downward swipe while the form is scrolled to the top
+      this.content.addEventListener('touchstart', (e: any) => this.handleTouchStart(e), { passive: true });
+      this.content.addEventListener('touchmove', (e: any) => this.handleTouchMove(e), { passive: false });
+      this.content.addEventListener('touchend', () => this.handleTouchEnd());
+      this.content.addEventListener('touchcancel', () => {
+        this.dragEngaged = false;
+        if (this.content) {
+          this.content.style.transition = 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)';
+          this.content.style.transform = 'translateY(0)';
+        }
+      });
+
+      // Dedicated drag handle: always closes regardless of scroll position
+      const dragHandle = document.getElementById('add-session-drag-handle');
+      if (dragHandle) {
+        this.bindHandleSwipe(dragHandle, () => (window as any).currentAddSessionSheetManager?.close());
+      }
+
+      // Backdrop click closes the sheet
+      this.overlay?.addEventListener('click', () => (window as any).currentAddSessionSheetManager?.close());
+
+      // Bind submit handlers — route through the current manager so stale
+      // instances after Astro view transitions don't handle submissions.
+      const submitBtnEl = document.getElementById('submit-btn');
+      if (this.form) {
+        this.form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          (window as any).currentAddSessionSheetManager?.handleSubmit(e);
+        });
+      }
+      if (submitBtnEl) {
+        submitBtnEl.addEventListener('click', (e) => {
+          e.preventDefault();
+          (window as any).currentAddSessionSheetManager?.handleSubmit(e);
+        });
+      }
+
+      // Handle showing patient list and search input
+      const patientList = document.getElementById('patient-list');
+      const patientListInner = document.getElementById('patient-list-inner');
+      const searchPatientInput = document.getElementById('search-patient-input') as HTMLInputElement | null;
+
+      searchPatientInput?.addEventListener('focus', () => {
+        if (patientList) patientList.style.gridTemplateRows = '1fr';
+      });
+
+      searchPatientInput?.addEventListener('input', (e: any) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (patientList) patientList.style.gridTemplateRows = '1fr';
+
+        const labels = patientListInner?.querySelectorAll('label');
+        labels?.forEach((label) => {
+          const input = label.querySelector('input[name="patientId"]') as HTMLInputElement | null;
+          const patientName = (input?.getAttribute('data-patient-name') || '').toLowerCase();
+          if (!query || patientName.includes(query)) {
+            label.classList.remove('hidden');
+          } else {
+            label.classList.add('hidden');
+          }
+        });
+      });
+
+      // Toggle ședință în grup
+      const groupToggleBtn = document.getElementById('btn-group-session-toggle');
+      groupToggleBtn?.addEventListener('click', () => {
+        (window as any).currentAddSessionSheetManager?.toggleGroupMode();
+      });
+    }
+
+    open() {
+      if (!this.sheet || !this.content || !this.overlay) return;
+      if (this.isOpen) return;
+      this.isOpen = true;
+
+      // Close any nested pickers when opening the main sheet
+      this.closeDatePicker();
+      this.closeCustomTimeModal();
+
+      // Ensure the sheet is in the layout before animating (prevents flash on load)
+      this.content.style.maxHeight = `${window.innerHeight * 0.9}px`;
+      this.sheet.dataset.open = 'true';
+      // Prevent the on-screen keyboard from opening automatically when the sheet slides up
+      if (document.activeElement && 'blur' in document.activeElement) {
+        (document.activeElement as HTMLElement).blur();
+      }
+      void this.content.offsetWidth;
+      // Reset any inline transform from drag and set closed state
+      this.content.style.transform = '';
+      this.content.classList.add('translate-y-full');
+      this.overlay.classList.add('opacity-0', 'pointer-events-none');
+      lockBodyScroll();
+
+      // Remove closed state on the next frame so the browser actually animates
+      requestAnimationFrame(() => {
+        this.content?.classList.remove('translate-y-full');
+        this.overlay?.classList.remove('opacity-0', 'pointer-events-none');
+      });
+    }
+
+    close() {
+      if (!this.sheet || !this.content || !this.overlay) return;
+      if (!this.isOpen) return;
+      this.isOpen = false;
+
+      // Close any nested pickers when closing the main sheet
+      this.closeDatePicker();
+      this.closeCustomTimeModal();
+
+      this.content.style.transform = '';
+      this.content.classList.add('translate-y-full');
+      this.overlay.classList.add('opacity-0', 'pointer-events-none');
+      unlockBodyScroll();
+
+      // Reset form and fully hide sheet after animation
+      setTimeout(() => {
+        if (this.sheet) this.sheet.dataset.open = 'false';
+        this.form?.reset();
+        this.isGroupEdit = false;
+        this.groupEditMemberIds = [];
+        this.groupEditMembers = [];
+        this.groupEditMemberCount = 0;
+        this.groupEditGroupId = null;
+        const subscriptionWarning = document.getElementById('patient-subscription-warning');
+        if (subscriptionWarning) subscriptionWarning.classList.add('hidden');
+        const groupEditNotice = document.getElementById('group-edit-notice');
+        const patientSearchWrap = document.getElementById('search-patient-input')?.parentElement;
+        const groupToggleBtn = document.getElementById('btn-group-session-toggle');
+        if (groupEditNotice) groupEditNotice.classList.add('hidden');
+        if (patientSearchWrap) patientSearchWrap.classList.remove('hidden');
+        if (groupToggleBtn) groupToggleBtn.classList.remove('hidden');
+      }, 500);
+    }
+
+    handleTouchStart(e: TouchEvent) {
+      this.startY = e.touches[0].clientY;
+      this.currentY = this.startY;
+      this.startX = e.touches[0].clientX;
+      this.dragEngaged = false;
+
+      // If an input is focused, prevent sheet dragging to avoid jumps while typing
+      if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+        this.scrollAtTop = false;
+        return;
+      }
+
+      // Only allow sheet drag when the scrollable form is at the top,
+      // otherwise the gesture should scroll the form instead
+      const scrollArea = this.content?.querySelector('.overflow-y-auto');
+      this.scrollAtTop = !scrollArea || scrollArea.scrollTop <= 0;
+    }
+
+    handleTouchMove(e: TouchEvent) {
+      const y = e.touches[0].clientY;
+      const deltaY = y - this.startY;
+      const deltaX = e.touches[0].clientX - this.startX;
+
+      if (!this.dragEngaged) {
+        if (this.scrollAtTop && deltaY > 10 && deltaY > Math.abs(deltaX) * 1.5) {
+          this.dragEngaged = true;
+          if (this.content) this.content.style.transition = 'none';
+        } else {
+          return;
+        }
+      }
+
+      this.currentY = y;
+      if (deltaY > 0 && this.content) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        this.content.style.transform = `translateY(${deltaY}px)`;
+      }
+    }
+
+    handleTouchEnd() {
+      if (!this.content || !this.dragEngaged) {
+        this.dragEngaged = false;
+        return;
+      }
+      this.dragEngaged = false;
+      const deltaY = this.currentY - this.startY;
+      this.content.style.transition = 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)';
+      
+      if (deltaY > 120) {
+        this.close();
+      } else {
+        this.content.style.transform = 'translateY(0)';
+      }
+    }
+
+    bindHandleSwipe(handle: HTMLElement, onClose: () => void) {
+      if (handle.dataset.handleSwipeBound === 'true') return;
+      handle.dataset.handleSwipeBound = 'true';
+
+      let startY = 0;
+      let currentY = 0;
+      let dragging = false;
+      const sheet = (handle.closest('[data-sheet-content]') || handle.closest('.fixed')) as HTMLElement | null;
+
+      handle.addEventListener('touchstart', (e: any) => {
+        e.stopPropagation();
+        startY = e.touches[0].clientY;
+        currentY = startY;
+        dragging = true;
+        if (sheet) sheet.style.transition = 'none';
+      }, { passive: true });
+
+      handle.addEventListener('touchmove', (e: any) => {
+        e.stopPropagation();
+        if (!dragging) return;
+        currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+        if (deltaY > 0 && sheet) {
+          sheet.style.transform = `translateY(${deltaY}px)`;
+        }
+      }, { passive: true });
+
+      const onEnd = (e?: Event) => {
+        if (e) e.stopPropagation();
+        if (!dragging) return;
+        dragging = false;
+        const deltaY = currentY - startY;
+        if (sheet) {
+          sheet.style.transition = 'transform 400ms cubic-bezier(0.32, 0.72, 0, 1)';
+          if (deltaY > 80) {
+            onClose();
+          } else {
+            sheet.style.transform = 'translateY(0)';
+          }
+        }
+      };
+
+      handle.addEventListener('touchend', onEnd);
+      handle.addEventListener('touchcancel', onEnd);
+    }
+  }
+
+  function initAddSessionSheet() {
+    const sheet = document.getElementById('add-session-sheet');
+    if (!sheet) return;
+
+    // Avoid re-initializing for the same DOM instance (prevents double init on
+    // pages where both the immediate call and astro:page-load fire).
+    const existing = (window as any).currentAddSessionSheetManager;
+    if (existing?.sheet === sheet) return;
+
+    // Only bind global listeners once; route every action to the current
+    // manager instance so it survives Astro view transitions.
+    if (!(window as any)._addSessionWindowListenerBound) {
+      window.addEventListener('openAddSession', (e: Event) => {
+        (window as any).currentAddSessionSheetManager?.handleOpenEvent(e);
+      });
+      (window as any)._addSessionWindowListenerBound = true;
+    }
+
+    if (!(window as any)._addSessionEscapeBound) {
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const mgr = (window as any).currentAddSessionSheetManager;
+        if (!mgr) return;
+
+        const timeModal = document.getElementById('add-session-time-modal');
+        const dateOpen = mgr.datePickerSheet?.dataset.open === 'true';
+        const timeOpen = timeModal?.dataset.open === 'true';
+
+        if (timeOpen) {
+          mgr.closeCustomTimeModal();
+        } else if (dateOpen) {
+          mgr.closeDatePicker();
+        } else if (mgr.isOpen) {
+          mgr.close();
+        }
+      });
+      (window as any)._addSessionEscapeBound = true;
+    }
+
+    // Recreate the manager on every page navigation so its element references
+    // are always attached to the current DOM.
+    (window as any).currentAddSessionSheetManager = new AddSessionSheetManager();
+  }
+
+  // Initialize on Astro page loads (including initial load) and as a fallback
+  // when the DOM is already ready.
+  document.addEventListener('astro:page-load', initAddSessionSheet);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initAddSessionSheet();
+  }
+</script>
+
+

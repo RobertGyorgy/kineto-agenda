@@ -1,0 +1,255 @@
+---
+// SettingsHub.astro - Meniu principal cu carduri capsule ultra-curate (fără subtitluri)
+---
+
+<div class="space-y-4 relative">
+  <!-- 1. Card Profil Principal -->
+  <a
+    href="/dashboard/settings?section=profile"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3.5">
+        <div id="settings-profile-avatar" class="w-12 h-12 rounded-full bg-brand-secondary text-white font-extrabold text-base flex items-center justify-center shadow-md shadow-brand-secondary/25 shrink-0">
+          RV
+        </div>
+        <h3 id="settings-profile-name" class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Profil</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-brand-secondary group-hover:text-white transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 2. Program de lucru -->
+  <a
+    href="/dashboard/settings?section=schedule"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Program de lucru</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-brand-primary group-hover:text-black transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 3. Pauza de masă -->
+  <a
+    href="/dashboard/settings?section=break"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Pauza de masă</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-brand-secondary group-hover:text-white transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 4. Ședințe -->
+  <a
+    href="/dashboard/settings?section=packages"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Ședințe</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-brand-secondary group-hover:text-white transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 5. Categorii pacienți -->
+  <a
+    href="/dashboard/settings?section=categories"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Categorii pacienți</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-brand-secondary group-hover:text-white transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 6. Backup -->
+  <a
+    href="/dashboard/settings?section=backup"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Backup</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-brand-secondary group-hover:text-white transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 8. Jurnal erori -->
+  <a
+    href="/dashboard/settings?section=logs"
+    data-astro-history="replace"
+    class="block bg-surface-card rounded-full py-3 pl-6 pr-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all group border border-transparent"
+  >
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 font-extrabold text-base flex items-center justify-center shadow-sm shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-text-main group-hover:text-brand-secondary transition-colors">Jurnal erori</h3>
+      </div>
+
+      <div class="w-10 h-10 rounded-full bg-surface-base flex items-center justify-center text-text-muted group-hover:bg-rose-600 group-hover:text-white transition-colors shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </div>
+  </a>
+
+  <!-- 9. Resetare cache și actualizare -->
+  <div class="pt-2 flex justify-center">
+    <button
+      type="button"
+      id="btn-clear-cache"
+      class="inline-flex items-center gap-3 px-7 py-3.5 rounded-full text-brand-secondary hover:bg-brand-secondary/10 font-extrabold text-base sm:text-lg transition-all active:scale-95 cursor-pointer border border-brand-secondary/30"
+    >
+      <svg class="w-6 h-6 stroke-[2.3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      <span>Resetare cache și actualizare</span>
+    </button>
+  </div>
+
+  <!-- 10. Deconectare (Logout) -->
+  <div class="pt-3 flex justify-center">
+    <button
+      type="button"
+      id="btn-logout"
+      class="inline-flex items-center gap-3 px-7 py-3.5 rounded-full text-rose-500/90 hover:text-rose-600 hover:bg-rose-500/10 font-extrabold text-lg sm:text-xl transition-all active:scale-95 cursor-pointer border border-rose-500/30"
+    >
+      <svg class="w-6 h-6 stroke-[2.3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      <span>Deconectare</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  import { logout } from '../../../lib/services/authService';
+  import { getProfile } from '../../../lib/services/settingsService';
+
+  async function updateProfileUI() {
+    try {
+      const profile = await getProfile();
+      const nameEl = document.getElementById('settings-profile-name');
+      const avatarEl = document.getElementById('settings-profile-avatar');
+
+      if (profile?.display_name) {
+        if (nameEl) nameEl.textContent = profile.display_name;
+        if (avatarEl) {
+          const parts = profile.display_name.trim().split(' ').filter(Boolean);
+          const initials = parts.length >= 2
+            ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+            : (parts[0]?.slice(0, 2).toUpperCase() || 'P');
+          avatarEl.textContent = initials;
+        }
+      }
+    } catch (e) {}
+  }
+
+  function initSettingsHub() {
+    updateProfileUI();
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn && logoutBtn.dataset.settingsHubBound !== 'true') {
+      logoutBtn.dataset.settingsHubBound = 'true';
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await logout();
+        } catch (e) {}
+        // Curățăm datele locale indiferent dacă logout-ul a reușit sau nu.
+        try {
+          Object.keys(localStorage)
+            .filter((key) => key.startsWith('kineto_'))
+            .forEach((key) => localStorage.removeItem(key));
+        } catch (e) {}
+        window.location.href = '/login';
+      });
+    }
+
+    const clearCacheBtn = document.getElementById('btn-clear-cache');
+    if (clearCacheBtn && clearCacheBtn.dataset.settingsHubBound !== 'true') {
+      clearCacheBtn.dataset.settingsHubBound = 'true';
+      clearCacheBtn.addEventListener('click', async () => {
+      try {
+        // 1. Unregister service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((r) => r.unregister()));
+        }
+        // 2. Clear caches
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+        // 3. Clear localStorage except critical auth data
+        const authToken = localStorage.getItem('sb-dlklegayibhgnrxnqapm-auth-token');
+        localStorage.clear();
+        if (authToken) {
+          localStorage.setItem('sb-dlklegayibhgnrxnqapm-auth-token', authToken);
+        }
+      } catch (e) {
+        console.error('Eroare la ștergerea cache-ului:', e);
+      } finally {
+        window.location.reload();
+      }
+    });
+    }
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initSettingsHub();
+  } else {
+    document.addEventListener('DOMContentLoaded', initSettingsHub);
+  }
+  document.addEventListener('astro:page-load', initSettingsHub);
+</script>

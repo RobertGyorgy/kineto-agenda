@@ -1,0 +1,849 @@
+---
+import Dock from '../components/layout/Dock.astro';
+import PaymentSheet from '../components/features/patients/PaymentSheet.astro';
+import AddSessionSheet from '../components/features/agenda/AddSessionSheet.astro';
+import SessionWrapUpSheet from '../components/features/agenda/SessionWrapUpSheet.astro';
+import CustomToast from '../components/ui/CustomToast.astro';
+import AddPatientSheet from '../components/features/patients/AddPatientSheet.astro';
+import RenewalSheet from '../components/features/patients/RenewalSheet.astro';
+import ShareScheduleSheet from '../components/features/patients/ShareScheduleSheet.astro';
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  hideDock?: boolean;
+}
+
+const { title, hideDock = false } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en" class="min-h-[100dvh] bg-transparent" transition:animate="none">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="transparent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Critical FOUC guard: hide every bottom-sheet/popup root before any CSS/JS runs.
+         This must be inline in <head> so hosted builds never flash sheets on first paint. -->
+    <style>
+      [data-sheet-root]:not([data-open="true"]) {
+        display: none !important;
+      }
+    </style>
+
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <title>{title} | Kineto Agenda</title>
+    <ClientRouter />
+    <!-- Prefetch every dashboard page as soon as the app boots,
+         so tapping a dock icon never waits for the network. -->
+    <link rel="prefetch" href="/dashboard" />
+    <link rel="prefetch" href="/dashboard/calendar" />
+    <link rel="prefetch" href="/dashboard/patients" />
+    <link rel="prefetch" href="/dashboard/reports" />
+    <link rel="prefetch" href="/dashboard/settings" />
+  </head>
+  <body class="min-h-[100dvh] w-full font-sans text-text-main antialiased selection:bg-brand-primary/20 overflow-x-hidden !bg-transparent">
+    <!-- Full-bleed static blob background — outer layer extends past the viewport to
+         cover the iOS status bar / notch / home-indicator area; inner wrapper keeps
+         the original blob positions unchanged. -->
+    <div class="pointer-events-none fixed -inset-16 z-0 bg-surface-base" aria-hidden="true">
+      <div class="absolute inset-16 overflow-visible -translate-y-16">
+        <svg class="absolute -top-24 -left-16 w-80 h-80 text-brand-secondary opacity-35 fill-current" viewBox="0 0 200 200">
+          <path d="M38.1,-60.5C47.8,-53.4,53.2,-39.7,59.3,-26.4C65.4,-13.1,72.2,-0.2,71.1,12.5C70,25.2,61,37.7,50.1,47.9C39.2,58.1,26.4,66,11.8,70C-2.8,74,-19.2,74.1,-33.4,67.8C-47.6,61.5,-59.6,48.8,-66.9,34.1C-74.2,19.4,-76.8,2.7,-73.9,-12.8C-71,-28.3,-62.6,-42.6,-50.8,-50.3C-39,-58,-23.8,-59.1,-9.1,-58.5C5.6,-57.9,28.4,-67.6,38.1,-60.5Z" transform="translate(100 100)" />
+        </svg>
+        <svg class="absolute top-[38%] -right-16 w-64 h-64 text-brand-primary opacity-45 fill-current" viewBox="0 0 200 200">
+          <path d="M44.7,-59.2C56.9,-51.2,65,-36.8,69.5,-21.4C74,-6,74.9,10.4,69.9,24.8C64.9,39.2,54,51.6,40.7,60.1C27.4,68.6,11.7,73.2,-3.5,77.5C-18.7,81.8,-33.4,85.8,-45.8,78.9C-58.2,72,-68.3,54.2,-74.4,36.1C-80.5,18,-82.6,-0.4,-78.3,-16.9C-74,-33.4,-63.3,-48,-49.7,-55.8C-36.1,-63.6,-19.6,-64.6,-2.4,-61.6C14.8,-58.6,32.5,-67.2,44.7,-59.2Z" transform="translate(100 100)" />
+        </svg>
+        <svg class="absolute -bottom-20 -left-16 w-72 h-72 text-brand-secondary opacity-35 fill-current" viewBox="0 0 200 200">
+          <path d="M41.5,-54.6C52.6,-45.8,59.9,-32.4,63.1,-18.2C66.3,-4,65.4,11,59.8,24.4C54.2,37.8,43.9,49.6,31.2,56.7C18.5,63.8,3.4,66.2,-12.3,64.7C-28,63.2,-44.3,57.8,-54.7,46.5C-65.1,35.2,-69.6,18,-68.1,1.9C-66.6,-14.2,-59.1,-29.2,-48.5,-38.3C-37.9,-47.4,-24.2,-50.6,-10.1,-52.1C4.1,-53.6,28.4,-57.4,41.5,-54.6Z" transform="translate(100 100)" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="min-h-[100dvh] w-full flex flex-col relative z-10">
+      <!-- Main Content Container -->
+      <main class="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-8 pb-32 pt-[max(0.75rem,env(safe-area-inset-top))] relative z-10 page-fade-in">
+        <slot />
+      </main>
+    </div>
+
+    <!-- Persistent Floating Icon Dock -->
+    {!hideDock && <Dock transition:persist />}
+
+    <!-- Sheets / Toasts live outside the content wrapper so their dynamic overlays share the root stacking context -->
+    <PaymentSheet transition:persist />
+    <AddSessionSheet transition:persist />
+    <AddPatientSheet transition:persist />
+    <RenewalSheet transition:persist />
+    <ShareScheduleSheet transition:persist />
+    <SessionWrapUpSheet transition:persist />
+    <CustomToast transition:persist />
+
+    <!-- Global Session Card Interactive Controller (Expand & Swipe-to-Edit/Delete) -->
+    <script>
+      import { initErrorLogger } from '../lib/errorLogger';
+      import { setPaymentStatus, renewWithPrompt, dismissRenewalNotification } from '../lib/services/patientService';
+      import { getAppointment, deleteAppointment, cancelAppointment, markAbsent } from '../lib/services/appointmentService';
+
+      // Prevent horizontal swipe navigation inside the PWA (Safari/Chrome back/forward gestures)
+      function preventHorizontalSwipeNavigation() {
+        let startX = 0;
+        let startY = 0;
+
+        document.addEventListener('touchstart', (e: TouchEvent) => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e: TouchEvent) => {
+          if (e.touches.length === 0) return;
+          const target = e.target as HTMLElement;
+          if (!target) return;
+
+          // Allow in-app horizontal gestures: session cards, patient list, calendar strip, swipeable filters, tabs, sheets
+          if (
+            target.closest('.swipe-surface') ||
+            target.closest('#patient-list-container') ||
+            target.closest('[data-calendar-strip]') ||
+            target.closest('.overflow-x-auto') ||
+            target.closest('.overflow-x-scroll') ||
+            target.closest('.filter-btn') ||
+            target.closest('#logs-filter') ||
+            target.closest('#reports-tabs-container') ||
+            target.closest('[data-sheet-root]') ||
+            target.closest('.no-scrollbar')
+          ) {
+            return;
+          }
+
+          // Check if any parent element is horizontally scrollable
+          let el: HTMLElement | null = target;
+          while (el && el !== document.body) {
+            const overflowX = window.getComputedStyle(el).overflowX;
+            if ((overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth) {
+              return;
+            }
+            el = el.parentElement;
+          }
+
+          const x = e.touches[0].clientX;
+          const y = e.touches[0].clientY;
+          const dx = x - startX;
+          const dy = y - startY;
+
+          // Block any edge horizontal swipe to stop history navigation on plain non-scrollable containers
+          if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 4) {
+            if (e.cancelable) e.preventDefault();
+          }
+        }, { passive: false });
+      }
+
+      function setupMemberSwipeController() {
+        const maxSwipe = -160; // 3 action buttons (40px) + gaps (~16px) with padding
+        let activeFront: HTMLElement | null = null;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let isSwiping = false;
+        let isHorizontalSwipe = false;
+
+        function closeMember(front: HTMLElement) {
+          front.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+          front.style.transform = 'translateX(0px)';
+          front.dataset.memberSwiped = 'false';
+        }
+
+        function openMember(front: HTMLElement) {
+          front.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+          front.style.transform = `translateX(${maxSwipe}px)`;
+          front.dataset.memberSwiped = 'true';
+        }
+
+        function closeAllMembers(except?: HTMLElement) {
+          document.querySelectorAll<HTMLElement>('.member-card-front[data-member-swiped="true"]').forEach(el => {
+            if (el !== except) closeMember(el);
+          });
+        }
+
+        document.addEventListener('touchstart', (e: TouchEvent) => {
+          const target = e.target as HTMLElement;
+          const front = target.closest('.member-card-front') as HTMLElement | null;
+          if (!front) return;
+          // Ignore interactive elements inside the member card front.
+          if (target.closest('button, a, input, select')) return;
+
+          activeFront = front;
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          currentX = startX;
+          isSwiping = true;
+          isHorizontalSwipe = false;
+          front.style.transition = 'none';
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e: TouchEvent) => {
+          if (!isSwiping || !activeFront) return;
+          const x = e.touches[0].clientX;
+          const y = e.touches[0].clientY;
+          const diffX = x - startX;
+          const diffY = y - startY;
+
+          if (!isHorizontalSwipe && (Math.abs(diffX) > 8 || Math.abs(diffY) > 8)) {
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+              isHorizontalSwipe = true;
+            } else {
+              isSwiping = false;
+              return;
+            }
+          }
+
+          if (!isHorizontalSwipe) return;
+          if (e.cancelable) e.preventDefault();
+
+          currentX = x;
+          const isOpen = activeFront.dataset.memberSwiped === 'true';
+          let targetX = isOpen ? maxSwipe + diffX : diffX;
+          if (targetX > 0) targetX = targetX * 0.2;
+          if (targetX < maxSwipe - 20) targetX = maxSwipe + (targetX - maxSwipe) * 0.2;
+
+          activeFront.style.transform = `translateX(${targetX}px)`;
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+          if (!isSwiping || !activeFront) return;
+          isSwiping = false;
+          activeFront.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+
+          const diffX = currentX - startX;
+          const isOpen = activeFront.dataset.memberSwiped === 'true';
+
+          if (!isOpen && diffX < -50) {
+            closeAllMembers(activeFront);
+            openMember(activeFront);
+          } else if (isOpen && diffX > 50) {
+            closeMember(activeFront);
+          } else {
+            if (isOpen) openMember(activeFront);
+            else closeMember(activeFront);
+          }
+
+          activeFront = null;
+        }, { passive: true });
+
+        // Tapping a swiped member front closes it; tapping any action button is handled by inline onclick.
+        document.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          const front = target.closest('.member-card-front') as HTMLElement | null;
+          if (front && front.dataset.memberSwiped === 'true' && !target.closest('.member-action-btn')) {
+            closeMember(front);
+          }
+        });
+      }
+
+      function setupSessionCardController() {
+        let activeSurface: HTMLElement | null = null;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let isSwiping = false;
+        let isHorizontalSwipe = false;
+        let wasSwiping = false;
+
+        function getMaxSwipe(surface: HTMLElement | null): number {
+          if (!surface) return -205;
+          if (surface.closest('#patient-list-container')) return -200;
+          return -205;
+        }
+
+        function isCardOpen(surface: HTMLElement): boolean {
+          const maxSwipe = getMaxSwipe(surface);
+          return surface.dataset.swipeOpen === 'true' || surface.style.transform.includes(`${maxSwipe}px`);
+        }
+
+        function closeCard(surface: HTMLElement) {
+          surface.dataset.swipeOpen = 'false';
+          surface.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), clip-path 300ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+          surface.style.transform = 'translateX(0px)';
+          surface.style.clipPath = '';
+        }
+
+        function openCard(surface: HTMLElement) {
+          const maxSwipe = getMaxSwipe(surface);
+          surface.dataset.swipeOpen = 'true';
+          surface.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), clip-path 300ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+          surface.style.transform = `translateX(${maxSwipe}px)`;
+          surface.style.clipPath = `inset(0 0 0 ${Math.round(-maxSwipe)}px)`;
+          const cardRoot = surface.closest('session-card, .swipe-surface') as HTMLElement | null;
+          // For group cards the expanded state is driven by the .expanded class, not inline styles.
+          if (cardRoot && !cardRoot.dataset.groupId) {
+            const details = cardRoot.querySelector('.card-details') as HTMLElement | null;
+            const icon = cardRoot.querySelector('.expand-icon') as HTMLElement | null;
+            if (details) details.style.gridTemplateRows = '0fr';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+          }
+        }
+
+        function handleSwipeStart(surface: HTMLElement, clientX: number, clientY: number) {
+          if ((window as any)._sessionDragActive) return;
+          activeSurface = surface;
+          startX = clientX;
+          startY = clientY;
+          currentX = startX;
+          isSwiping = true;
+          isHorizontalSwipe = false;
+          wasSwiping = false;
+          surface.style.transition = 'none';
+        }
+
+        function handleSwipeMove(clientX: number, clientY: number, e?: TouchEvent) {
+          if (!isSwiping || !activeSurface) return;
+          const diffX = clientX - startX;
+          const diffY = clientY - startY;
+
+          if (!isHorizontalSwipe && (Math.abs(diffX) > 8 || Math.abs(diffY) > 8)) {
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+              isHorizontalSwipe = true;
+              wasSwiping = true;
+              const wrapper = activeSurface.closest('session-card, .relative') as HTMLElement | null;
+              if (wrapper) wrapper.dataset.wasSwiping = 'true';
+            } else {
+              isSwiping = false;
+              return;
+            }
+          }
+
+          if (!isHorizontalSwipe) return;
+          if (e && e.cancelable) e.preventDefault();
+
+          currentX = clientX;
+          const maxSwipe = getMaxSwipe(activeSurface);
+          const isOpen = isCardOpen(activeSurface);
+          let targetX = isOpen ? maxSwipe + diffX : diffX;
+          if (targetX > 0) targetX = targetX * 0.2;
+          if (targetX < maxSwipe - 20) targetX = maxSwipe + (targetX - maxSwipe) * 0.2;
+
+          activeSurface.style.transform = `translateX(${targetX}px)`;
+          activeSurface.style.clipPath = targetX < 0
+            ? `inset(0 0 0 ${Math.max(0, Math.round(-targetX))}px)`
+            : '';
+        }
+
+        function handleSwipeEnd() {
+          if (!isSwiping || !activeSurface) return;
+          isSwiping = false;
+          activeSurface.style.transition = 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), clip-path 300ms cubic-bezier(0.34, 1.56, 0.64, 1)';
+
+          const maxSwipe = getMaxSwipe(activeSurface);
+          const diffX = currentX - startX;
+          const isOpen = isCardOpen(activeSurface);
+
+          if (!isOpen && diffX < -50) {
+            openCard(activeSurface);
+          } else if (isOpen && diffX > 50) {
+            closeCard(activeSurface);
+          } else {
+            if (isOpen) {
+              openCard(activeSurface);
+            } else {
+              closeCard(activeSurface);
+            }
+          }
+
+          const targetSurface = activeSurface;
+          setTimeout(() => {
+            wasSwiping = false;
+            const wrapper = targetSurface.closest('session-card, .relative') as HTMLElement | null;
+            if (wrapper) wrapper.dataset.wasSwiping = 'false';
+          }, 100);
+
+          activeSurface = null;
+        }
+
+        function cancelSwipe() {
+          if (!activeSurface) return;
+          isSwiping = false;
+          isHorizontalSwipe = false;
+          if (isCardOpen(activeSurface)) {
+            openCard(activeSurface);
+          } else {
+            closeCard(activeSurface);
+          }
+          activeSurface = null;
+        }
+
+        // Tap card summary to expand/collapse details (never close a swiped card).
+        document.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+
+          // Ignore action buttons/areas and interactive elements.
+          if (target.closest('[data-action-btn], [data-action-area], button, a, input, select')) {
+            return;
+          }
+
+          if (wasSwiping) return;
+
+          const summary = target.closest('.card-summary') as HTMLElement | null;
+          if (!summary) {
+            // Tap outside any card summary closes any open swiped card.
+            const tappedSurface = target.closest('.swipe-surface') as HTMLElement | null;
+            if (!tappedSurface) {
+              document.querySelectorAll<HTMLElement>('.swipe-surface[data-swipe-open="true"]').forEach(closeCard);
+            }
+            return;
+          }
+
+          const card = (summary.closest('.swipe-surface, session-card, [data-patient-id]') || summary.parentElement) as HTMLElement | null;
+          if (!card) return;
+
+          // The swipe-open flag lives on the .swipe-surface element, not on session-card.
+          const swipeSurface = card.classList.contains('swipe-surface') ? card : (card.querySelector('.swipe-surface') as HTMLElement | null);
+
+          // If the card is swiped open, tapping the summary closes it instead of expanding.
+          if (swipeSurface && swipeSurface.dataset.swipeOpen === 'true') {
+            closeCard(swipeSurface);
+            return;
+          }
+
+          const isGroupCard = card.tagName.toLowerCase() === 'session-card' && !!card.dataset.groupId;
+
+          if (isGroupCard) {
+            card.classList.toggle('expanded');
+            return;
+          }
+
+          const details = card.querySelector('.card-details') as HTMLElement | null;
+          const icon = card.querySelector('.expand-icon') as HTMLElement | null;
+
+          if (details) {
+            const isCurrentlyExpanded = details.style.gridTemplateRows === '1fr';
+            details.style.gridTemplateRows = isCurrentlyExpanded ? '0fr' : '1fr';
+            if (icon) icon.style.transform = isCurrentlyExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+          }
+        });
+
+        // Touch events
+        document.addEventListener('touchstart', (e: TouchEvent) => {
+          const target = e.target as HTMLElement;
+
+          // Let member cards have their own independent swipe.
+          if (target.closest('.member-card-front')) return;
+
+          const surface = target.closest('.swipe-surface') as HTMLElement | null;
+          if (surface && !target.closest('button, a, input, select')) {
+            handleSwipeStart(surface, e.touches[0].clientX, e.touches[0].clientY);
+          }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e: TouchEvent) => {
+          if (isSwiping && e.touches.length > 0) {
+            handleSwipeMove(e.touches[0].clientX, e.touches[0].clientY, e);
+          }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+          if (isSwiping) handleSwipeEnd();
+        }, { passive: true });
+
+        document.addEventListener('touchcancel', () => {
+          if (isSwiping) cancelSwipe();
+        }, { passive: true });
+
+        // Mouse drag events for Desktop mouse interaction
+        let isMouseDown = false;
+        document.addEventListener('mousedown', (e: MouseEvent) => {
+          const target = e.target as HTMLElement;
+
+          // Let member cards have their own independent swipe.
+          if (target.closest('.member-card-front')) return;
+
+          const surface = target.closest('.swipe-surface') as HTMLElement | null;
+          if (surface && !target.closest('button, a, input, select')) {
+            isMouseDown = true;
+            handleSwipeStart(surface, e.clientX, e.clientY);
+          }
+        });
+
+        document.addEventListener('mousemove', (e: MouseEvent) => {
+          if (isMouseDown && isSwiping) {
+            handleSwipeMove(e.clientX, e.clientY);
+          }
+        });
+
+        document.addEventListener('mouseup', () => {
+          if (isMouseDown) {
+            isMouseDown = false;
+            handleSwipeEnd();
+          }
+        });
+
+        document.addEventListener('mouseleave', () => {
+          if (isMouseDown && isSwiping) {
+            isMouseDown = false;
+            cancelSwipe();
+          }
+        });
+      }
+
+      // Initialize on load and page swaps
+      if (typeof window !== 'undefined') {
+        initErrorLogger();
+        import('../lib/services/sessionNotifier').then(({ initSessionNotifier }) => {
+          initSessionNotifier();
+        }).catch(() => {});
+
+        // ── Eagerly warm the browser cache for every dashboard page ──────────
+        // This makes ClientRouter navigation truly instant: the HTML is already
+        // in the HTTP cache before the user taps a dock icon.
+        (function warmDashboardCache() {
+          if ((window as any).__kinetoDashboardCacheWarmed) return;
+          (window as any).__kinetoDashboardCacheWarmed = true;
+
+          const pages = [
+            '/dashboard',
+            '/dashboard/calendar',
+            '/dashboard/patients',
+            '/dashboard/reports',
+            '/dashboard/settings'
+          ];
+
+          function fetchPage(path: string) {
+            fetch(path, { credentials: 'same-origin', cache: 'default' })
+              .catch(() => { /* ignore network/cache errors */ });
+          }
+
+          // Preload after the current page is fully interactive
+          if (document.readyState === 'complete') {
+            pages.forEach(fetchPage);
+          } else {
+            window.addEventListener('load', () => pages.forEach(fetchPage), { once: true });
+          }
+        })();
+
+        // Detectare logout real (nu erori de rețea tranzitorii) și redirect la login.
+        import('../lib/supabase').then(({ supabase }) => {
+          supabase.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_OUT') {
+              // Evităm scurgerea datelor între utilizatori pe același device.
+              try {
+                Object.keys(localStorage)
+                  .filter((key) => key.startsWith('kineto_'))
+                  .forEach((key) => localStorage.removeItem(key));
+              } catch (e) {}
+              window.location.href = '/login';
+            }
+          });
+        }).catch(() => {/* ignore */});
+
+        if (!(window as any)._sessionCardControllerInitialized) {
+          (window as any)._sessionCardControllerInitialized = true;
+          setupSessionCardController();
+          setupMemberSwipeController();
+          preventHorizontalSwipeNavigation();
+        }
+
+        // Force all internal dashboard navigation to use replaceState so iOS never
+        // builds a history stack that re-enables the edge-swipe back gesture.
+        if (!(window as any).__kinetoReplaceNavigationBound) {
+          (window as any).__kinetoReplaceNavigationBound = true;
+          document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const anchor = target.closest('a') as HTMLAnchorElement | null;
+            if (!anchor) return;
+
+            // Let the Dock handle its own navigation (it already uses replace).
+            if (anchor.closest('#persistent-dock')) return;
+
+            const href = anchor.getAttribute('href');
+            if (!href) return;
+            if (href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
+            if (anchor.target === '_blank') return;
+            if (href.startsWith('#')) return;
+            if (anchor.hasAttribute('download')) return;
+
+            // Only intercept same-origin internal links
+            try {
+              const url = new URL(href, window.location.origin);
+              if (url.origin !== window.location.origin) return;
+            } catch {
+              return;
+            }
+
+            e.preventDefault();
+            import('astro:transitions/client').then(({ navigate }) => {
+              navigate(href, { history: 'replace' });
+            }).catch(() => {
+              // Fallback if Astro transitions aren't available
+              window.location.replace(href);
+            });
+          }, true);
+        }
+        
+        // Expose global renewal handlers once (with patientName support)
+        (window as any).renewSubscription = (patientId: string, totalSessions: number, patientName?: string) => {
+          renewWithPrompt(patientId, totalSessions, patientName);
+        };
+        (window as any).dismissSubscriptionWarning = (patientId: string) => {
+          dismissRenewalNotification(patientId);
+          window.dispatchEvent(new CustomEvent('patientsUpdated'));
+          window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+        };
+
+        // Expose global payment handler
+        (window as any).handlePaymentToggle = (patientId: string, currentStatus: string) => {
+          if (currentStatus !== 'Achitat integral' && currentStatus !== 'Achitat' && currentStatus !== 'Paid' && currentStatus !== 'Paid fully') {
+            window.dispatchEvent(new CustomEvent('openPaymentSheet', {
+              detail: { patientId, currentStatus }
+            }));
+          } else {
+            // Toggle back to Unpaid in Supabase
+            setPaymentStatus(patientId, false)
+              .then(() => window.dispatchEvent(new CustomEvent('patientsUpdated')))
+              .catch((err: any) => (window as any).showToast('Eroare la actualizarea plății: ' + (err.message || err), 'error'));
+          }
+        };
+
+        // Expose global session edit/delete handlers
+        function resolveSessionId(input: string | HTMLElement): string | null {
+          if (typeof input === 'string') return input;
+          const card = input.closest('session-card') as HTMLElement | null;
+          return card?.dataset.sessionId || null;
+        }
+
+        (window as any).editSession = async (input: string | HTMLElement) => {
+          const sessionId = resolveSessionId(input);
+          if (!sessionId) return;
+          try {
+            const appointment = await getAppointment(sessionId);
+            window.dispatchEvent(new CustomEvent('openAddSession', {
+              detail: {
+                isEdit: true,
+                session: {
+                  id: appointment.id,
+                  selectedDate: appointment.data,
+                  selectedTime: appointment.ora,
+                  patientName: appointment.pacienti
+                    ? (appointment.pacienti.prenume === appointment.pacienti.nume || !appointment.pacienti.nume ? appointment.pacienti.prenume : `${appointment.pacienti.prenume} ${appointment.pacienti.nume}`.trim())
+                    : undefined,
+                }
+              }
+            }));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la încărcarea programării: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).deleteSession = async (input: string | HTMLElement) => {
+          const sessionId = resolveSessionId(input);
+          if (!sessionId) return;
+          const confirmed = await (window as any).showConfirm('Ștergere programare', 'Sigur vrei să ștergi această programare?');
+          if (!confirmed) return;
+          try {
+            // Animate card removal optimistically offscreen
+            const cardEl = (typeof input !== 'string' ? input.closest('session-card, .swipe-surface') : document.querySelector(`[data-session-id="${sessionId}"]`)) as HTMLElement | null;
+            if (cardEl) {
+              const wrapper = (cardEl.closest('.relative, session-card') as HTMLElement) || cardEl;
+              wrapper.style.transition = 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)';
+              wrapper.style.opacity = '0';
+              wrapper.style.maxHeight = '0px';
+              wrapper.style.transform = 'scale(0.95)';
+              wrapper.style.overflow = 'hidden';
+              setTimeout(() => wrapper.remove(), 300);
+            }
+
+            await deleteAppointment(sessionId);
+            window.dispatchEvent(new CustomEvent('sessionsUpdated', {
+              detail: { source: 'dashboardDelete', deletedId: sessionId }
+            }));
+            (window as any).showToast('Programarea a fost ștearsă cu succes.', 'success');
+          } catch (err: any) {
+            (window as any).showToast('Eroare la ștergerea programării: ' + (err.message || err), 'error');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+          }
+        };
+
+        (window as any).cancelSession = async (input: string | HTMLElement) => {
+          const sessionId = resolveSessionId(input);
+          if (!sessionId) return;
+          const confirmed = await (window as any).showConfirm('Anulare programare', 'Sigur vrei să marchezi această programare ca anulată/absent?');
+          if (!confirmed) return;
+          try {
+            await markAbsent(sessionId, 'Anulat de la card');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+            (window as any).showToast('Programarea a fost anulată cu succes.', 'success');
+          } catch (err: any) {
+            (window as any).showToast('Eroare la anularea programării: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).markSessionAbsent = async (sessionId: string) => {
+          if (!sessionId) return;
+          const confirmed = await (window as any).showConfirm('Marcă absență', 'Sigur vrei să marchezi această ședință ca absent?');
+          if (!confirmed) return;
+          try {
+            await markAbsent(sessionId, 'Absent din card grup');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+            (window as any).showToast('Ședința a fost marcată ca absentă.', 'success');
+          } catch (err: any) {
+            (window as any).showToast('Eroare la marcarea absenței: ' + (err.message || err), 'error');
+          }
+        };
+
+        // Confirmă o sesiune trecută sau de azi direct din card
+        (window as any).confirmSession = async (input: string | HTMLElement) => {
+          const sessionId = resolveSessionId(input);
+          if (!sessionId) return;
+          try {
+            const appointment = await getAppointment(sessionId);
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (appointment.data && appointment.data > todayStr) {
+              (window as any).showToast('Nu poți confirma o ședință din viitor.', 'warning');
+              return;
+            }
+            window.dispatchEvent(new CustomEvent('openWrapUp', {
+              detail: { appointment }
+            }));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la încărcarea programării: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).markAbsentSession = async (input: string | HTMLElement) => {
+          const sessionId = resolveSessionId(input);
+          if (!sessionId) return;
+          try {
+            await markAbsent(sessionId, 'Pacientul nu a venit');
+            (window as any).showToast('Ședința a fost marcată ca neefectuată.', 'info');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+            window.dispatchEvent(new CustomEvent('patientsUpdated'));
+          } catch (err: any) {
+            (window as any).showToast('Eroare: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).confirmGroupSession = async (memberIds: string) => {
+          const ids = (memberIds || '').split(',').filter(Boolean);
+          if (ids.length === 0) return;
+          try {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const { completeSession, getAppointment } = await import('../lib/services/appointmentService');
+            for (const id of ids) {
+              const appt = await getAppointment(id);
+              if (appt && (!appt.data || appt.data <= todayStr)) {
+                await completeSession(id);
+              }
+            }
+            (window as any).showToast('Ședințele din grup au fost confirmate!', 'success');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+            window.dispatchEvent(new CustomEvent('patientsUpdated'));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la confirmarea grupului: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).cancelGroupSession = async (memberIds: string) => {
+          const ids = (memberIds || '').split(',').filter(Boolean);
+          if (ids.length === 0) return;
+          try {
+            await Promise.all(ids.map(id => cancelAppointment(id, 'Anulat din grup')));
+            (window as any).showToast('Ședința în grup a fost anulată.', 'info');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la anularea grupului: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).deleteGroupSession = async (memberIds: string) => {
+          const ids = (memberIds || '').split(',').filter(Boolean);
+          if (ids.length === 0) return;
+          if (!window.confirm('Sigur ștergi ședința în grup pentru toți pacienții?')) return;
+          try {
+            await Promise.all(ids.map(id => deleteAppointment(id)));
+            (window as any).showToast('Ședința în grup a fost ștearsă.', 'info');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated', { detail: { source: 'dashboardDelete' } }));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la ștergerea grupului: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).removeMemberFromGroup = async (appointmentId: string, _groupId?: string) => {
+          if (!appointmentId) return;
+          try {
+            const { updateAppointment } = await import('../lib/services/appointmentService');
+            await updateAppointment(appointmentId, { group_id: null });
+            (window as any).showToast('Pacientul a fost eliminat din grup. Programarea lui rămâne la aceeași oră.', 'info');
+            window.dispatchEvent(new CustomEvent('sessionsUpdated'));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la eliminarea din grup: ' + (err.message || err), 'error');
+          }
+        };
+
+        (window as any).editGroupSession = async (memberIds: string, selectedDate?: string, selectedTime?: string, location?: string) => {
+          const ids = (memberIds || '').split(',').filter(Boolean);
+          if (ids.length === 0) return;
+          try {
+            const { getAppointment } = await import('../lib/services/appointmentService');
+            const appointments = await Promise.all(ids.map(id => getAppointment(id)));
+            const members = appointments.map(appt => ({
+              appointmentId: appt.id,
+              patientId: appt.pacient_id,
+              patientName: appt.pacienti ? `${appt.pacienti.prenume} ${appt.pacienti.nume}` : ''
+            }));
+            const first = appointments[0];
+            const date = selectedDate || first?.data;
+            const time = selectedTime || first?.ora;
+            const loc = location || first?.locatie || 'Belaqva';
+            window.dispatchEvent(new CustomEvent('openAddSession', {
+              detail: {
+                isGroupEdit: true,
+                memberIds: ids,
+                members,
+                groupId: first?.group_id || null,
+                location: loc,
+                date,
+                time,
+              }
+            }));
+          } catch (err: any) {
+            (window as any).showToast('Eroare la încărcarea grupului: ' + (err.message || err), 'error');
+          }
+        };
+
+
+        // ── Service Worker registration for PWA updates ─────────────────────
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker
+            .register('/sw.js', { updateViaCache: 'none' })
+            .then(async (registration) => {
+              // Force the browser to check for a new service worker on every app open.
+              await registration.update();
+
+              // Tell a newly activated worker to clear stale caches from previous builds.
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker?.addEventListener('statechange', () => {
+                  if (newWorker?.state === 'activated') {
+                    registration.active?.postMessage({ type: 'CLEAR_CACHES' });
+                  }
+                });
+              });
+            })
+            .catch(() => {});
+        }
+      }
+
+    </script>
+  </body>
+</html>

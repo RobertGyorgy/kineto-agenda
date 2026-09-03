@@ -1,0 +1,164 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="ro" class="h-full bg-surface-base">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#eae9e4" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="KinetoAgenda" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <title>Autentificare | Kineto Agenda</title>
+  </head>
+  <body class="h-full min-h-screen font-sans text-text-main antialiased selection:bg-brand-primary/20 flex items-center justify-center p-4 sm:p-6 relative overflow-x-hidden">
+    
+    <!-- Full-bleed blob background — extended past viewport for status bar / notch,
+         shifted up so it looks the same as when the keyboard pushes the viewport up. -->
+    <div class="fixed -inset-16 z-0 pointer-events-none" aria-hidden="true">
+      <div class="absolute inset-16 overflow-visible -translate-y-16">
+        <!-- Organic Liquid SVG Blob (Pink, Top-Left) -->
+        <div class="absolute -top-24 -left-16 w-80 h-80 opacity-35 text-brand-secondary">
+          <svg viewBox="0 0 200 200" class="w-full h-full fill-current">
+            <path d="M38.1,-60.5C47.8,-53.4,53.2,-39.7,59.3,-26.4C65.4,-13.1,72.2,-0.2,71.1,12.5C70,25.2,61,37.7,50.1,47.9C39.2,58.1,26.4,66,11.8,70C-2.8,74,-19.2,74.1,-33.4,67.8C-47.6,61.5,-59.6,48.8,-66.9,34.1C-74.2,19.4,-76.8,2.7,-73.9,-12.8C-71,-28.3,-62.6,-42.6,-50.8,-50.3C-39,-58,-23.8,-59.1,-9.1,-58.5C5.6,-57.9,28.4,-67.6,38.1,-60.5Z" transform="translate(100 100)" />
+          </svg>
+        </div>
+
+        <!-- Organic Liquid SVG Blob (Yellow, Bottom-Right) -->
+        <div class="absolute -bottom-20 -right-16 w-80 h-80 opacity-45 text-brand-primary">
+          <svg viewBox="0 0 200 200" class="w-full h-full fill-current">
+            <path d="M44.7,-59.2C56.9,-51.2,65,-36.8,69.5,-21.4C74,-6,74.9,10.4,69.9,24.8C64.9,39.2,54,51.6,40.7,60.1C27.4,68.6,11.7,73.2,-3.5,77.5C-18.7,81.8,-33.4,85.8,-45.8,78.9C-58.2,72,-68.3,54.2,-74.4,36.1C-80.5,18,-82.6,-0.4,-78.3,-16.9C-74,-33.4,-63.3,-48,-49.7,-55.8C-36.1,-63.6,-19.6,-64.6,-2.4,-61.6C14.8,-58.6,32.5,-67.2,44.7,-59.2Z" transform="translate(100 100)" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Container Card Autentificare -->
+    <div class="w-full max-w-md relative z-10 space-y-6">
+      
+      <!-- Header Titlu -->
+      <div class="text-center space-y-2 pb-1">
+        <h1 class="text-3xl sm:text-4xl font-bold text-text-main tracking-tight">Kineto Agenda</h1>
+        <p class="text-sm sm:text-base font-bold text-text-main pt-1">Autentificare</p>
+      </div>
+      <!-- Card Formular -->
+      <div class="bg-surface-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl border border-border-subtle/70 relative overflow-hidden">
+        
+
+
+        <!-- Conținut Formular Suprapus Deasupra (z-10) -->
+        <div class="relative z-10 space-y-5">
+          <form id="login-form" class="space-y-4" action="/dashboard" method="GET">
+            <div id="login-error" class="hidden p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-xs font-bold text-center"></div>
+            
+            <!-- Câmp Email -->
+            <div class="space-y-1.5">
+              <label for="email" class="block text-xs font-black uppercase tracking-wider text-text-main">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                placeholder="admin@kineto.ro"
+                class="w-full px-4 py-3.5 bg-surface-base/80 border border-border-subtle/80 rounded-2xl text-sm font-semibold text-text-main focus:outline-none focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/20 transition-all placeholder:text-text-muted/60 backdrop-blur-sm"
+              />
+            </div>
+
+            <!-- Câmp Parolă cu Toggle Vizibilitate -->
+            <div class="space-y-1.5">
+              <label for="password" class="block text-xs font-black uppercase tracking-wider text-text-main">Parolă</label>
+              
+              <div class="relative">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  autocomplete="current-password"
+                  required
+                  placeholder="••••••••"
+                  class="w-full px-4 py-3.5 pr-12 bg-surface-base/80 border border-border-subtle/80 rounded-2xl text-sm font-semibold text-text-main focus:outline-none focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/20 transition-all placeholder:text-text-muted/60 backdrop-blur-sm"
+                />
+                <button
+                  type="button"
+                  id="toggle-password"
+                  class="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main transition-colors p-1"
+                  aria-label="Afișează parola"
+                >
+                  <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Buton Autentificare -->
+            <button
+              type="submit"
+              class="w-full py-4 px-6 bg-brand-primary text-text-main font-black rounded-2xl shadow-md hover:bg-brand-primary/90 transition-all active:scale-[0.98] text-base sm:text-lg mt-2 cursor-pointer text-center"
+            >
+              Intră în cont
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      import { login } from '../lib/services/authService';
+
+      async function initLoginPage() {
+        const toggleBtn = document.getElementById('toggle-password');
+        const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+        const loginForm = document.getElementById('login-form');
+        const errEl = document.getElementById('login-error');
+
+        if (toggleBtn && passwordInput) {
+          toggleBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+          });
+        }
+
+        if (loginForm) {
+          loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById('email') as HTMLInputElement;
+            const passInput  = document.getElementById('password') as HTMLInputElement;
+            const btn = loginForm.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+            if (btn) { btn.disabled = true; btn.textContent = 'Se conectează...'; }
+            if (errEl) errEl.classList.add('hidden');
+
+            try {
+              await login(emailInput?.value?.trim(), passInput?.value);
+              window.location.replace('/dashboard');
+            } catch (err: any) {
+              if (errEl) {
+                errEl.textContent = 'Email sau parolă incorecte.';
+                errEl.classList.remove('hidden');
+              }
+              if (btn) { btn.disabled = false; btn.textContent = 'Intră în cont'; }
+            }
+          });
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', initLoginPage);
+      document.addEventListener('astro:page-load', initLoginPage);
+    </script>
+  </body>
+</html>

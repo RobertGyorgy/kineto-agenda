@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "strict": false,
+    "jsx": "preserve",
+    "jsxImportSource": "astro",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

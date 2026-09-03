@@ -1,0 +1,12 @@
+---
+import { ROUTES } from '../lib/constants';
+
+// Gateway logic: Simulated check for user session
+const isAuthenticated = true;
+
+if (isAuthenticated) {
+  return Astro.redirect(ROUTES.DASHBOARD);
+} else {
+  return Astro.redirect(ROUTES.LOGIN);
+}
+---

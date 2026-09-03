@@ -1,0 +1,131 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="ro" class="h-full bg-surface-base">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#eae9e4" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <title>Înregistrare | Kineto Agenda</title>
+  </head>
+  <body class="h-full min-h-screen font-sans text-text-main antialiased selection:bg-brand-primary/20 flex items-center justify-center p-4 sm:p-6 relative overflow-x-hidden">
+    
+    <!-- Organic Liquid SVG Blob (Pink, Top-Left) -->
+    <div class="fixed -top-24 -left-16 w-80 h-80 pointer-events-none opacity-35 text-brand-secondary z-0">
+      <svg viewBox="0 0 200 200" class="w-full h-full fill-current">
+        <path d="M38.1,-60.5C47.8,-53.4,53.2,-39.7,59.3,-26.4C65.4,-13.1,72.2,-0.2,71.1,12.5C70,25.2,61,37.7,50.1,47.9C39.2,58.1,26.4,66,11.8,70C-2.8,74,-19.2,74.1,-33.4,67.8C-47.6,61.5,-59.6,48.8,-66.9,34.1C-74.2,19.4,-76.8,2.7,-73.9,-12.8C-71,-28.3,-62.6,-42.6,-50.8,-50.3C-39,-58,-23.8,-59.1,-9.1,-58.5C5.6,-57.9,28.4,-67.6,38.1,-60.5Z" transform="translate(100 100)" />
+      </svg>
+    </div>
+
+    <!-- Organic Liquid SVG Blob (Yellow, Bottom-Right) -->
+    <div class="fixed -bottom-20 -right-16 w-80 h-80 pointer-events-none opacity-45 text-brand-primary z-0">
+      <svg viewBox="0 0 200 200" class="w-full h-full fill-current">
+        <path d="M44.7,-59.2C56.9,-51.2,65,-36.8,69.5,-21.4C74,-6,74.9,10.4,69.9,24.8C64.9,39.2,54,51.6,40.7,60.1C27.4,68.6,11.7,73.2,-3.5,77.5C-18.7,81.8,-33.4,85.8,-45.8,78.9C-58.2,72,-68.3,54.2,-74.4,36.1C-80.5,18,-82.6,-0.4,-78.3,-16.9C-74,-33.4,-63.3,-48,-49.7,-55.8C-36.1,-63.6,-19.6,-64.6,-2.4,-61.6C14.8,-58.6,32.5,-67.2,44.7,-59.2Z" transform="translate(100 100)" />
+      </svg>
+    </div>
+
+    <!-- Container Card Înregistrare -->
+    <div class="w-full max-w-md relative z-10 space-y-6">
+      
+      <!-- Header Titlu -->
+      <div class="text-center space-y-1">
+        <h1 class="text-3xl sm:text-4xl font-black text-text-main tracking-tight">Cont Nou</h1>
+        <p class="text-xs sm:text-sm font-bold text-text-muted uppercase tracking-wider">Creează-ți agenda de kinetoterapie</p>
+      </div>
+      <!-- Card Formular -->
+      <div class="bg-surface-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl border border-border-subtle/70 relative overflow-hidden">
+
+        <!-- Conținut Formular Suprapus Deasupra (z-10) -->
+        <div class="relative z-10 space-y-5">
+          <form id="signup-form" class="space-y-4" action="/dashboard" method="GET">
+            
+            <!-- Câmp Nume Complet -->
+            <div class="space-y-1.5">
+              <label for="fullname" class="block text-xs font-black uppercase tracking-wider text-text-main">Nume & Prenume</label>
+              <input
+                type="text"
+                id="fullname"
+                name="fullname"
+                required
+                placeholder="Dr. Alex Popescu"
+                class="w-full px-4 py-3.5 bg-surface-base/80 border border-border-subtle/80 rounded-2xl text-sm font-semibold text-text-main focus:outline-none focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/20 transition-all placeholder:text-text-muted/60 backdrop-blur-sm"
+              />
+            </div>
+
+            <!-- Câmp Email -->
+            <div class="space-y-1.5">
+              <label for="email" class="block text-xs font-black uppercase tracking-wider text-text-main">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                placeholder="alex@kineto.ro"
+                class="w-full px-4 py-3.5 bg-surface-base/80 border border-border-subtle/80 rounded-2xl text-sm font-semibold text-text-main focus:outline-none focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/20 transition-all placeholder:text-text-muted/60 backdrop-blur-sm"
+              />
+            </div>
+
+            <!-- Câmp Parolă -->
+            <div class="space-y-1.5">
+              <label for="password" class="block text-xs font-black uppercase tracking-wider text-text-main">Parolă</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                placeholder="••••••••"
+                class="w-full px-4 py-3.5 bg-surface-base/80 border border-border-subtle/80 rounded-2xl text-sm font-semibold text-text-main focus:outline-none focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/20 transition-all placeholder:text-text-muted/60 backdrop-blur-sm"
+              />
+            </div>
+
+            <!-- Buton Înregistrare -->
+            <button
+              type="submit"
+              class="w-full py-4 px-6 bg-brand-primary text-text-main font-black rounded-2xl shadow-md hover:bg-brand-primary/90 transition-all active:scale-[0.98] text-base sm:text-lg mt-2 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>Creează Contul</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
+          </form>
+
+          <!-- Link Autentificare Existenta -->
+          <div class="pt-4 border-t border-border-subtle/50 text-center">
+            <p class="text-xs font-bold text-text-muted">
+              Ai deja un cont creat?
+              <a href="/login" class="text-brand-secondary font-black hover:underline transition-colors ml-1">Autentifică-te aici</a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Script simplu de redirecționare -->
+    <script>
+      function initSignupPage() {
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm) {
+          signupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            window.location.replace('/dashboard');
+          });
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', initSignupPage);
+      document.addEventListener('astro:page-load', initSignupPage);
+    </script>
+  </body>
+</html>

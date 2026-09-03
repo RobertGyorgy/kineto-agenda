@@ -1,0 +1,100 @@
+---
+---
+
+<div 
+  id="frequency-prompt-banner" 
+  class="fixed top-0 inset-x-0 z-[80] px-4 pt-4 transition-transform duration-500 ease-out -translate-y-[120%] pointer-events-none"
+>
+  <div class="max-w-3xl mx-auto bg-black text-white rounded-[1.75rem] p-5 shadow-2xl pointer-events-auto">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-full bg-brand-primary text-black flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p id="frequency-prompt-text" class="text-sm font-bold leading-snug">
+          Pacientul are mai multe ședințe pe săptămână.
+        </p>
+        <div class="flex gap-2 mt-3">
+          <button type="button" id="frequency-prompt-add" class="flex-1 py-2.5 rounded-full bg-brand-primary text-black text-sm font-extrabold active:scale-95 transition-transform">
+            Adaugă altă zi
+          </button>
+          <button type="button" id="frequency-prompt-dismiss" class="py-2.5 px-4 rounded-full bg-white/15 text-white text-sm font-bold active:scale-95 transition-transform">
+            Nu
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  class FrequencyPromptBanner {
+    banner: HTMLElement | null;
+    textEl: HTMLElement | null;
+    addBtn: HTMLButtonElement | null;
+    dismissBtn: HTMLButtonElement | null;
+    detail: any = null;
+
+    constructor() {
+      this.banner = document.getElementById('frequency-prompt-banner');
+      this.textEl = document.getElementById('frequency-prompt-text');
+      this.addBtn = document.getElementById('frequency-prompt-add') as HTMLButtonElement;
+      this.dismissBtn = document.getElementById('frequency-prompt-dismiss') as HTMLButtonElement;
+
+      window.addEventListener('showFrequencyPrompt', (e: any) => this.show(e.detail));
+      this.addBtn?.addEventListener('click', () => this.addAnotherDay());
+      this.dismissBtn?.addEventListener('click', () => this.hide());
+    }
+
+    // Prima zi lucrătoare (L–V) liberă după data curentă, în aceeași săptămână
+    suggestedNextDate(dateStr: string): string {
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return dateStr;
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      // Dacă pică în weekend sau trece de vineri, rămânem pe aceeași dată (doctorul alege ziua)
+      if (next.getDay() === 0 || next.getDay() === 6) return dateStr;
+      const fmt = (x: Date) => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+      return fmt(next);
+    }
+
+    show(detail: any) {
+      if (!this.banner || !detail) return;
+      this.detail = detail;
+      if (this.textEl) {
+        this.textEl.textContent = `${detail.patientName} are ${detail.frequency} ședințe/săptămână (${detail.count} programate săptămâna aceasta). Adaugi altă zi?`;
+      }
+      this.banner.classList.remove('-translate-y-[120%]');
+    }
+
+    hide() {
+      if (!this.banner) return;
+      this.banner.classList.add('-translate-y-[120%]');
+      this.detail = null;
+    }
+
+    addAnotherDay() {
+      const detail = this.detail;
+      this.hide();
+      if (!detail) return;
+      window.dispatchEvent(new CustomEvent('openAddSession', {
+        detail: {
+          patientName: detail.patientName,
+          date: this.suggestedNextDate(detail.date),
+          showDateTime: true,
+        }
+      }));
+    }
+  }
+
+  function initFrequencyBanner() {
+    if (!(window as any).__kinetoFrequencyBannerInitialized) {
+      (window as any).__kinetoFrequencyBannerInitialized = true;
+      new FrequencyPromptBanner();
+    }
+  }
+  document.addEventListener('DOMContentLoaded', initFrequencyBanner);
+  document.addEventListener('astro:page-load', initFrequencyBanner);
+</script>

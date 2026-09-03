@@ -1,0 +1,232 @@
+---
+---
+<!-- Toast & Confirm Modal Global Pipeline -->
+<div id="toast-container" class="fixed top-[calc(2rem+env(safe-area-inset-top))] right-5 z-[9999] flex flex-col gap-3 max-w-sm w-[calc(100vw-2.5rem)] pointer-events-none">
+  <!-- Toast cards dynamically injected by JS -->
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div id="confirm-modal-overlay" data-sheet-root class="fixed inset-0 z-[99999] bg-black/25 flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] opacity-0 pointer-events-none transition-all duration-300">
+  <div id="confirm-modal-card" class="bg-surface-card w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl scale-95 transition-all duration-300 border border-black/10 flex flex-col gap-5">
+    <div class="flex items-center gap-3">
+      <div id="confirm-modal-icon" class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div>
+        <h4 id="confirm-modal-title" class="text-xl font-extrabold tracking-tight text-black">Confirmare</h4>
+        <p id="confirm-modal-message" class="text-sm font-semibold text-text-muted mt-0.5">Ești sigur că dorești să continui?</p>
+      </div>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button type="button" id="confirm-modal-cancel" class="flex-1 py-3.5 px-5 rounded-2xl bg-black/5 hover:bg-black/10 active:scale-95 transition-all text-sm font-bold text-black">
+        Anulează
+      </button>
+      <button type="button" id="confirm-modal-ok" class="flex-1 py-3.5 px-5 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-95 transition-all text-sm font-bold text-white shadow-md shadow-rose-600/30">
+        Confirmă
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { lockBodyScroll, unlockBodyScroll } from '../../utils/scrollLock';
+
+  // Toast & Confirm Modal Global API Definition
+  type ToastType = 'warning' | 'error' | 'success' | 'info';
+
+  interface ToastOptions {
+    message: string;
+    type?: ToastType;
+    title?: string;
+    duration?: number;
+  }
+
+  function showToast(opts: ToastOptions | string, typeOverride: ToastType = 'error', titleOverride?: string) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const message = typeof opts === 'string' ? opts : opts.message;
+    const type = typeof opts === 'string' ? typeOverride : (opts.type || 'error');
+    const title = typeof opts === 'string' ? titleOverride : opts.title;
+    const duration = (typeof opts === 'object' && opts.duration) ? opts.duration : 4000;
+
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-xl transition-all duration-300 opacity-0 translate-y-[-10px] backdrop-blur-md border border-black/5`;
+
+    let iconSvg = '';
+    let bgStyle = '';
+    let defaultTitle = '';
+
+    if (type === 'warning') {
+      bgStyle = 'bg-amber-500 text-white';
+      defaultTitle = title || 'Atenție';
+      iconSvg = `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+    } else if (type === 'success') {
+      bgStyle = 'bg-emerald-600 text-white';
+      defaultTitle = title || 'Succes';
+      iconSvg = `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+    } else if (type === 'info') {
+      bgStyle = 'bg-black text-white';
+      defaultTitle = title || 'Informație';
+      iconSvg = `<svg class="w-5 h-5 shrink-0 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    } else {
+      // Error
+      bgStyle = 'bg-rose-600 text-white';
+      defaultTitle = title || 'Eroare';
+      iconSvg = `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+    }
+
+    toast.className += ` ${bgStyle}`;
+    toast.innerHTML = `
+      <div class="pt-0.5">${iconSvg}</div>
+      <div class="flex-1 min-w-0 pr-1">
+        <h5 class="text-xs font-black uppercase tracking-wider opacity-90">${defaultTitle}</h5>
+        <p class="text-sm font-bold leading-snug mt-0.5 break-words">${message}</p>
+      </div>
+      <button class="toast-close shrink-0 p-1 opacity-70 hover:opacity-100 transition-opacity">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    `;
+
+    container.appendChild(toast);
+
+    // Animate entry
+    requestAnimationFrame(() => {
+      toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+    });
+
+    let autoDismissTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const removeToast = () => {
+      if (autoDismissTimer) {
+        clearTimeout(autoDismissTimer);
+        autoDismissTimer = null;
+      }
+      toast.classList.add('opacity-0', 'scale-95');
+      setTimeout(() => toast.remove(), 300);
+    };
+
+    toast.querySelector('.toast-close')?.addEventListener('click', removeToast);
+    if (duration > 0) {
+      autoDismissTimer = setTimeout(removeToast, duration);
+    }
+  }
+
+  let pendingConfirmResolver: ((val: boolean) => void) | null = null;
+  let activeConfirmCleanup: ((confirmed: boolean) => void) | null = null;
+  let confirmCloseTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function closeCurrentConfirm(confirmed = false) {
+    if (activeConfirmCleanup) {
+      activeConfirmCleanup(confirmed);
+    }
+
+    const overlay = document.getElementById('confirm-modal-overlay');
+    const card = document.getElementById('confirm-modal-card');
+
+    if (overlay) {
+      overlay.dataset.open = 'false';
+      overlay.classList.add('opacity-0', 'pointer-events-none');
+    }
+    if (card) {
+      card.classList.add('scale-95');
+    }
+
+    if (confirmCloseTimeout) {
+      clearTimeout(confirmCloseTimeout);
+      confirmCloseTimeout = null;
+    }
+
+    unlockBodyScroll();
+  }
+
+  function showConfirm(title: string, message: string, onConfirm?: () => void): Promise<boolean> {
+    const overlay = document.getElementById('confirm-modal-overlay');
+    const card = document.getElementById('confirm-modal-card');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const msgEl = document.getElementById('confirm-modal-message');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    const okBtn = document.getElementById('confirm-modal-ok');
+
+    if (!overlay || !card) {
+      const fallback = confirm(`${title}\n\n${message}`);
+      if (fallback && onConfirm) onConfirm();
+      return Promise.resolve(fallback);
+    }
+
+    // Guard against overlapping showConfirm() calls: close any already-open modal
+    if (activeConfirmCleanup) {
+      closeCurrentConfirm(false);
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+
+    lockBodyScroll();
+    overlay.dataset.open = 'true';
+    overlay.classList.remove('opacity-0', 'pointer-events-none');
+    card.classList.remove('scale-95');
+
+    return new Promise<boolean>((resolve) => {
+      pendingConfirmResolver = resolve;
+
+      const cleanup = (confirmed: boolean) => {
+        if (activeConfirmCleanup !== cleanup) return;
+        activeConfirmCleanup = null;
+
+        unlockBodyScroll();
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+        card.classList.add('scale-95');
+
+        // Delay hiding the sheet root so the 300ms opacity/scale transition plays
+        // instead of being cut short by the global [data-sheet-root]:not([data-open="true"]) rule.
+        if (confirmCloseTimeout) {
+          clearTimeout(confirmCloseTimeout);
+          confirmCloseTimeout = null;
+        }
+        confirmCloseTimeout = setTimeout(() => {
+          overlay.dataset.open = 'false';
+          confirmCloseTimeout = null;
+        }, 300);
+
+        okBtn?.removeEventListener('click', handleOk);
+        cancelBtn?.removeEventListener('click', handleCancel);
+        overlay.removeEventListener('click', handleOverlay);
+        document.removeEventListener('keydown', handleKeydown);
+
+        if (confirmed && onConfirm) onConfirm();
+        const resolver = pendingConfirmResolver;
+        pendingConfirmResolver = null;
+        resolver?.(confirmed);
+      };
+
+      activeConfirmCleanup = cleanup;
+
+      const handleOk = () => cleanup(true);
+      const handleCancel = () => cleanup(false);
+      const handleOverlay = (e: Event) => {
+        if (e.target === overlay) cleanup(false);
+      };
+      const handleKeydown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') cleanup(false);
+      };
+
+      okBtn?.addEventListener('click', handleOk);
+      cancelBtn?.addEventListener('click', handleCancel);
+      overlay.addEventListener('click', handleOverlay);
+      document.addEventListener('keydown', handleKeydown);
+    });
+  }
+
+  // Close the modal and unlock scroll when Astro view transitions swap the page,
+  // otherwise a persisted open modal stays visible and body scroll remains locked.
+  document.addEventListener('astro:before-swap' as any, () => {
+    closeCurrentConfirm(false);
+  });
+
+  // Attach global functions to window
+  (window as any).showToast = showToast;
+  (window as any).showConfirm = showConfirm;
+  (window as any).customAlert = showToast;
+</script>

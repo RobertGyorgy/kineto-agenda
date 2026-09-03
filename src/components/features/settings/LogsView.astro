@@ -1,0 +1,230 @@
+---
+// LogsView.astro — Jurnal local de erori interpretate
+---
+
+<section class="space-y-5">
+  <!-- Header cu acțiuni -->
+  <div class="flex flex-col gap-4">
+    <div>
+      <h3 class="text-lg sm:text-xl font-black text-text-main">Jurnal erori</h3>
+      <p class="text-xs sm:text-sm font-semibold text-text-muted mt-0.5">
+        Ultimele erori capturate din aplicație, cu explicații și recomandări.
+      </p>
+      <p class="text-[10px] font-bold text-emerald-600 mt-1">
+        Erorile se sincronizează automat în Supabase când ești online.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        id="btn-export-logs"
+        class="px-4 py-2.5 rounded-full bg-surface-base hover:bg-brand-primary text-text-main hover:text-black font-bold text-sm transition-all active:scale-95 border border-transparent"
+      >
+        Exportă
+      </button>
+      <button
+        type="button"
+        id="btn-test-error"
+        class="px-4 py-2.5 rounded-full bg-surface-base hover:bg-brand-primary text-text-main hover:text-black font-bold text-sm transition-all active:scale-95 border border-transparent"
+      >
+        Eroare test
+      </button>
+      <button
+        type="button"
+        id="btn-clear-logs"
+        class="px-4 py-2.5 rounded-full bg-surface-base hover:bg-rose-100 text-rose-600 font-bold text-sm transition-all active:scale-95 border border-transparent"
+      >
+        Șterge
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtre rapide -->
+  <div id="logs-filter" class="flex flex-wrap gap-2">
+    <button type="button" data-filter="all" class="px-4 py-2 rounded-full text-sm font-bold transition-all bg-brand-secondary text-white">Toate</button>
+    <button type="button" data-filter="error" class="px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-base text-text-main border border-transparent">Erori</button>
+    <button type="button" data-filter="fetch" class="px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-base text-text-main border border-transparent">Rețea</button>
+    <button type="button" data-filter="warning" class="px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-base text-text-main border border-transparent">Avertismente</button>
+  </div>
+
+  <!-- Lista de loguri -->
+  <div id="logs-list" class="space-y-3">
+    <!-- populat din JS -->
+  </div>
+
+  <!-- Empty state -->
+  <div id="logs-empty" class="hidden bg-surface-card rounded-[2rem] p-8 text-center border border-transparent">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h4 class="text-lg font-extrabold text-text-main">Nicio eroare capturată</h4>
+    <p class="text-sm font-semibold text-text-muted mt-1">Aplicația funcționează fără probleme deocamdată.</p>
+  </div>
+</section>
+
+<script>
+  import { getLogs, clearLogs, captureException, formatLogTimestamp, type LogEntry, type LogType } from '../../../lib/errorLogger';
+
+  function initLogsView() {
+    const listEl = document.getElementById('logs-list');
+    const emptyEl = document.getElementById('logs-empty');
+    const clearBtn = document.getElementById('btn-clear-logs');
+    const filterBtns = document.querySelectorAll<HTMLButtonElement>('#logs-filter [data-filter]');
+    if (!listEl || !emptyEl) return;
+    if (listEl.dataset.logsViewBound === 'true') {
+      render();
+      return;
+    }
+    listEl.dataset.logsViewBound = 'true';
+
+    let currentFilter: LogType | 'all' = 'all';
+
+    const typeLabels: Record<string, string> = {
+      error: 'Eroare',
+      fetch: 'Rețea',
+      warning: 'Avertisment',
+      rejection: 'Promisiune respinsă',
+      manual: 'Raportat manual',
+    };
+
+    const typeClasses: Record<string, string> = {
+      error: 'bg-rose-100 text-rose-700',
+      fetch: 'bg-amber-100 text-amber-700',
+      warning: 'bg-orange-100 text-orange-700',
+      rejection: 'bg-purple-100 text-purple-700',
+      manual: 'bg-blue-100 text-blue-700',
+    };
+
+    function render() {
+      const allLogs = getLogs();
+      const logs = currentFilter === 'all' ? allLogs : allLogs.filter((l) => l.type === currentFilter);
+
+      if (logs.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      listEl.innerHTML = logs.map((log) => `
+        <article class="bg-surface-card rounded-[1.75rem] p-4 sm:p-5 border border-transparent shadow-sm break-words">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${typeClasses[log.type] || 'bg-surface-base text-text-muted'}">
+                ${typeLabels[log.type] || log.type}
+              </span>
+              <span class="text-xs font-bold text-text-muted">${formatLogTimestamp(log.timestamp)}</span>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted bg-surface-base px-2 py-1 rounded-full shrink-0">
+              ${log.source}
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <p class="text-xs font-black uppercase tracking-wider text-text-muted mb-1">Mesaj</p>
+              <p class="text-sm sm:text-base font-bold text-text-main break-words">${escapeHtml(log.message)}</p>
+            </div>
+
+            <div class="bg-brand-primary/10 rounded-2xl p-3.5 border border-transparent">
+              <p class="text-xs font-black uppercase tracking-wider text-text-muted mb-1">Interpretare</p>
+              <p class="text-sm font-bold text-text-main break-words">${escapeHtml(log.interpretation)}</p>
+            </div>
+
+            ${log.details ? `
+              <div>
+                <p class="text-xs font-black uppercase tracking-wider text-text-muted mb-1">Detalii complete</p>
+                <pre class="text-xs font-mono text-text-main bg-surface-base rounded-xl p-3 overflow-x-auto whitespace-pre-wrap break-words">${escapeHtml(log.details)}</pre>
+              </div>
+            ` : ''}
+
+            ${log.stack ? `
+              <details class="group">
+                <summary class="text-xs font-black uppercase tracking-wider text-text-muted cursor-pointer list-none flex items-center gap-2">
+                  <span>Stack trace</span>
+                  <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <pre class="mt-2 text-[10px] font-mono text-text-muted bg-surface-base rounded-xl p-3 overflow-x-auto whitespace-pre-wrap">${escapeHtml(log.stack)}</pre>
+              </details>
+            ` : ''}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function escapeHtml(str: string): string {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    filterBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.dataset.filter as LogType | 'all';
+
+        filterBtns.forEach((b) => {
+          const active = b === btn;
+          b.className = active
+            ? 'px-4 py-2 rounded-full text-sm font-bold transition-all bg-brand-secondary text-white'
+            : 'px-4 py-2 rounded-full text-sm font-bold transition-all bg-surface-base text-text-main border border-transparent';
+        });
+
+        render();
+      });
+    });
+
+    clearBtn?.addEventListener('click', async () => {
+      await clearLogs();
+      render();
+    });
+
+    document.getElementById('btn-export-logs')?.addEventListener('click', async () => {
+      const logs = getLogs();
+      if (logs.length === 0) {
+        (window as any).showToast?.('Nu există erori de exportat.', 'info');
+        return;
+      }
+
+      const lines = logs.map((log, index) => {
+        const parts = [
+          `[${index + 1}] ${formatLogTimestamp(log.timestamp)} — ${log.type.toUpperCase()} (${log.source})`,
+          `Mesaj: ${log.message}`,
+          `Interpretare: ${log.interpretation}`,
+        ];
+        if (log.details) parts.push(`Detalii: ${log.details}`);
+        if (log.stack) parts.push(`Stack:\n${log.stack}`);
+        return parts.join('\n') + '\n' + '—'.repeat(40);
+      });
+
+      const header = `Jurnal erori Kineto Agenda — ${logs.length} înregistrări\nGenerat la: ${formatLogTimestamp(Date.now())}\n${'='.repeat(40)}`;
+      const text = [header, ...lines].join('\n\n');
+
+      try {
+        await navigator.clipboard.writeText(text);
+        (window as any).showToast?.('Logurile au fost copiate în clipboard.', 'success');
+      } catch {
+        (window as any).showToast?.('Nu s-a putut copia în clipboard.', 'error');
+      }
+    });
+
+    document.getElementById('btn-test-error')?.addEventListener('click', () => {
+      // Generează o eroare de test deliberată pentru validarea loggerului.
+      captureException(new Error('Eroare de test generată manual din Setări → Jurnal erori'), 'test-button');
+      // Mai generăm și o eroare prin console.error pentru a testa ambele căi.
+      console.error('Test console.error:', { foo: 'bar', numar: 42 });
+      render();
+    });
+
+    render();
+  }
+
+  document.addEventListener('DOMContentLoaded', initLogsView);
+  document.addEventListener('astro:page-load', initLogsView);
+</script>

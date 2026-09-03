@@ -1,0 +1,20 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Ruleaza zilnic la ora 09:00 UTC (12:00 ora Romaniei)
+    - cron: '0 9 * * *'
+  # Permite si rularea manuala din interfata GitHub
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pinging Supabase to prevent pause
+        env:
+          SUPABASE_URL: https://dlklegayibhgnrxnqapm.supabase.co
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" -X GET "${SUPABASE_URL}/rest/v1/" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"

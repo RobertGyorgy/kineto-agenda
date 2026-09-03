@@ -1,0 +1,651 @@
+---
+// ShareScheduleSheet.astro — Bottom sheet pentru trimiterea programului viitor al pacientului
+---
+
+<div 
+  id="share-schedule-sheet" 
+  data-sheet-root 
+  class="fixed inset-x-0 bottom-0 z-[130] bg-white rounded-t-[2.5rem] pt-5 pb-0 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] translate-y-full will-change-transform flex flex-col max-h-[92vh] overflow-hidden"
+>
+  <!-- Drag handle -->
+  <div class="flex items-center justify-center py-3 shrink-0 cursor-grab active:cursor-grabbing" id="share-schedule-drag-handle">
+    <div class="w-12 h-1.5 bg-black/10 rounded-full"></div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto px-6 pt-1 pb-36 space-y-5">
+    <!-- Header: Nume pacient + badge ședințe -->
+    <div class="flex items-center justify-between gap-3 mb-2">
+      <div class="min-w-0">
+        <h2 class="text-2xl font-bold tracking-tight text-neutral-900 truncate" id="share-patient-subtitle">Pacient</h2>
+      </div>
+      <div id="share-sessions-count-badge" class="shrink-0 px-5 py-2.5 rounded-2xl bg-pink-50 text-pink-700 font-black text-sm whitespace-nowrap border-none">
+        0 ședințe
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="share-loading-state" class="py-12 flex flex-col items-center justify-center space-y-3">
+      <div class="w-8 h-8 border-3 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-xs font-bold text-pink-700">Se caută ședințele viitoare...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="share-empty-state" class="hidden p-6 rounded-3xl bg-neutral-50 border border-black/5 text-center space-y-2 shadow-sm">
+      <div class="w-11 h-11 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center mx-auto mb-1 shadow-2xs">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+      <p class="text-sm font-black text-neutral-900">Nicio ședință viitoare</p>
+      <p class="text-xs font-medium text-neutral-600 leading-relaxed">Pacientul nu are nicio ședință activă programată în calendar pentru datele viitoare.</p>
+    </div>
+
+    <!-- Content State (când există ședințe) -->
+    <div id="share-content-box" class="hidden space-y-5">
+      <!-- Card 1: Previzualizare Mesaj -->
+      <div id="share-preview-card" class="bg-brand-primary rounded-[2rem] p-5 border-none space-y-3 shadow-sm transition-colors">
+        <span id="share-preview-label" class="text-xs sm:text-sm font-black uppercase tracking-wider text-black">Previzualizare Mesaj</span>
+        <textarea
+          id="share-message-textarea"
+          class="w-full p-4 rounded-2xl bg-white border-none text-sm font-bold text-neutral-900 focus:outline-none focus:ring-0 transition-all shadow-2xs leading-relaxed resize-none overflow-hidden"
+          style="min-height: 120px;"
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <!-- Card 2: Lista ședințe (grupate pe zi) -->
+      <div class="bg-neutral-50 rounded-[2rem] p-5 border-none space-y-3 shadow-sm">
+        <span class="text-xs sm:text-sm font-black uppercase tracking-wider text-black">Lista ședințe</span>
+        <div id="share-sessions-list" class="space-y-4">
+          <!-- Injected dynamically: grouped by date -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky Bottom Actions: Buton Copiază + Buton Trimite (Share) -->
+  <div class="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-white via-white to-transparent pt-8 flex flex-col gap-2.5 pb-safe z-10">
+    <div class="flex gap-2.5">
+      <!-- Buton Copiază Text -->
+      <button 
+        type="button" 
+        id="btn-copy-schedule" 
+        class="flex-1 py-4 px-4 rounded-2xl bg-brand-secondary hover:brightness-105 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-brand-secondary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg class="w-5 h-5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span>Copiază</span>
+      </button>
+
+      <!-- Buton Trimite (WhatsApp / Native Share) -->
+      <button 
+        type="button" 
+        id="btn-share-schedule" 
+        class="flex-1 py-4 px-4 rounded-2xl bg-brand-secondary hover:brightness-105 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-brand-secondary/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+        <span>Trimite</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { supabase } from '../../../lib/supabase';
+  import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
+  import { parseLocalDate, toLocalISOString } from '../../../utils/date';
+
+  class ShareScheduleSheetManager {
+    private sheet: HTMLElement | null = null;
+    private overlay: HTMLElement | null = null;
+    private messageTextarea: HTMLInputElement | HTMLTextAreaElement | null = null;
+    private sessionsListContainer: HTMLElement | null = null;
+    private loadingState: HTMLElement | null = null;
+    private emptyState: HTMLElement | null = null;
+    private contentBox: HTMLElement | null = null;
+    private subtitleEl: HTMLElement | null = null;
+    private countBadgeEl: HTMLElement | null = null;
+
+    private currentPatientId: string | null = null;
+    private currentPatientName: string = '';
+    private currentPatientPhone: string = '';
+    private currentPatientLocation: string = '';
+    private upcomingAppointments: any[] = [];
+    private isOpen: boolean = false;
+
+    // Gesture handling
+    private startY: number = 0;
+    private currentY: number = 0;
+    private startX: number = 0;
+    private dragEngaged = false;
+    private startTime = 0;
+    private scrollAtTop: boolean = true;
+
+    constructor() {
+      this.reconnect();
+      this.createOverlay();
+      this.bindEvents();
+    }
+
+    reconnect() {
+      this.sheet = document.getElementById('share-schedule-sheet');
+      this.messageTextarea = document.getElementById('share-message-textarea') as HTMLTextAreaElement;
+      this.sessionsListContainer = document.getElementById('share-sessions-list');
+      this.loadingState = document.getElementById('share-loading-state');
+      this.emptyState = document.getElementById('share-empty-state');
+      this.contentBox = document.getElementById('share-content-box');
+      this.subtitleEl = document.getElementById('share-patient-subtitle');
+      this.countBadgeEl = document.getElementById('share-sessions-count-badge');
+
+      if (this.sheet?.dataset.open === 'true') this.isOpen = true;
+    }
+
+    createOverlay() {
+      const existingOverlays = document.querySelectorAll('.share-schedule-overlay');
+      existingOverlays.forEach(o => o.remove());
+
+      this.overlay = document.createElement('div');
+      this.overlay.className = 'fixed inset-0 bg-black/25 z-[120] opacity-0 pointer-events-none transition-opacity duration-300 share-schedule-overlay';
+      document.body.appendChild(this.overlay);
+    }
+
+    async handleOpenEvent(e: CustomEvent) {
+      this.reconnect();
+      if (!e.detail?.patientId) return;
+
+      this.currentPatientId = e.detail.patientId;
+      this.currentPatientName = e.detail.patientName || 'Pacient';
+      this.currentPatientPhone = e.detail.patientPhone || '';
+      this.currentPatientLocation = e.detail.patientLocation || '';
+
+      if (this.subtitleEl) {
+        this.subtitleEl.textContent = this.currentPatientName;
+      }
+
+      this.open();
+      await this.loadUpcomingSessions();
+    }
+
+
+
+    async loadUpcomingSessions() {
+      if (!this.currentPatientId) return;
+
+      if (this.loadingState) this.loadingState.classList.remove('hidden');
+      if (this.emptyState) this.emptyState.classList.add('hidden');
+      if (this.contentBox) this.contentBox.classList.add('hidden');
+      if (this.countBadgeEl) this.countBadgeEl.textContent = '0 ședințe';
+
+      try {
+        const todayStr = toLocalISOString(new Date());
+
+        // Fetch latest patient details directly from Supabase
+        const { data: patientData, error: patientError } = await (supabase as any)
+          .from('pacienti')
+          .select('id, nume, prenume, telefon, locatie')
+          .eq('id', this.currentPatientId)
+          .single();
+
+        if (patientData) {
+          this.currentPatientName = `${patientData.prenume || ''} ${patientData.nume || ''}`.trim() || this.currentPatientName || 'Pacient';
+          this.currentPatientPhone = patientData.telefon || this.currentPatientPhone || '';
+          this.currentPatientLocation = patientData.locatie || this.currentPatientLocation || 'Belaqva';
+          
+          if (this.subtitleEl) {
+            this.subtitleEl.textContent = this.currentPatientName;
+          }
+        }
+
+        // Fetch real upcoming active appointments for this patient from Supabase (today and future dates)
+        const { data, error } = await supabase
+          .from('programari')
+          .select('id, pacient_id, data, ora, locatie, status')
+          .eq('pacient_id', this.currentPatientId)
+          .gte('data', todayStr)
+          .not('status', 'in', '("finalizat","anulat","absent")')
+          .order('data', { ascending: true })
+          .order('ora', { ascending: true });
+
+        if (error) throw error;
+
+        // Filtrează ședințele de azi dacă ora a trecut deja
+        const now = new Date();
+        const currentHourMin = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        this.upcomingAppointments = (data || []).filter((item: any) => {
+          if (item.data === todayStr && item.ora) {
+            const cleanOra = item.ora.slice(0, 5);
+            return cleanOra >= currentHourMin;
+          }
+          return true;
+        });
+
+        if (this.loadingState) this.loadingState.classList.add('hidden');
+
+        if (this.upcomingAppointments.length === 0) {
+          if (this.emptyState) this.emptyState.classList.remove('hidden');
+          if (this.countBadgeEl) this.countBadgeEl.textContent = '0 ședințe';
+          if (this.messageTextarea) {
+            this.messageTextarea.value = `Bună ziua!\nNu aveți nicio ședință programată momentan.`;
+          }
+          return;
+        }
+
+        if (this.contentBox) this.contentBox.classList.remove('hidden');
+        if (this.countBadgeEl) {
+          this.countBadgeEl.textContent = `${this.upcomingAppointments.length} ${this.upcomingAppointments.length === 1 ? 'ședință' : 'ședințe'}`;
+        }
+
+        // Format generic conform cerinței:
+        // Bună ziua!
+        // Vă transmit următoarele dumneavoastră programări:
+        // LUNI, 24 august – ora 7:45
+        // ...
+        // Vă mulțumesc!
+        const sessionLines = this.upcomingAppointments.map((item) => {
+          const dateFormatted = this.formatDateForMessage(item.data);
+          const timeClean = this.formatTimeClean(item.ora);
+          return `${dateFormatted} – ora ${timeClean}`;
+        });
+
+        const msg = `Bună ziua!\nVă transmit următoarele dumneavoastră programări:\n${sessionLines.join('\n')}\n\nVă mulțumesc!`;
+
+        if (this.messageTextarea) {
+          this.messageTextarea.value = msg;
+          this.adjustTextareaHeight();
+          requestAnimationFrame(() => this.adjustTextareaHeight());
+        }
+
+        // Determine if primary patient location is Ghimbav
+        const firstSessionLoc = this.upcomingAppointments[0]?.locatie || this.upcomingAppointments[0]?.pacienti?.locatie || this.currentPatientLocation || 'Belaqva';
+        const isMainGhimbav = firstSessionLoc.toLowerCase().includes('ghimbav');
+
+        // Apply theme to Preview Card
+        const previewCard = document.getElementById('share-preview-card');
+        const previewLabel = document.getElementById('share-preview-label');
+        if (previewCard && previewLabel) {
+          if (isMainGhimbav) {
+            previewCard.className = 'bg-brand-secondary rounded-[2rem] p-5 border-none space-y-3 shadow-sm transition-colors';
+            previewLabel.className = 'text-xs sm:text-sm font-black uppercase tracking-wider text-white';
+          } else {
+            previewCard.className = 'bg-brand-primary rounded-[2rem] p-5 border-none space-y-3 shadow-sm transition-colors';
+            previewLabel.className = 'text-xs sm:text-sm font-black uppercase tracking-wider text-black';
+          }
+        }
+
+        // Render sessions list cards — grouped by date
+        if (this.sessionsListContainer) {
+          // Group appointments by date
+          const grouped: Record<string, any[]> = {};
+          this.upcomingAppointments.forEach((item) => {
+            const key = item.data;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(item);
+          });
+
+          let html = '';
+          for (const dateKey of Object.keys(grouped)) {
+            const dateLabel = this.formatDayAndMonth(dateKey);
+            const items = grouped[dateKey];
+
+            html += `<div class="space-y-2">`;
+            
+            // Check location of items in this day
+            const dayLoc = items[0]?.locatie || items[0]?.pacienti?.locatie || this.currentPatientLocation || 'Belaqva';
+            const isDayGhimbav = dayLoc.toLowerCase().includes('ghimbav');
+            const accentBarClass = isDayGhimbav ? 'bg-pink-500' : 'bg-amber-400';
+
+            // Date header with location accent bar
+            html += `<div class="flex items-center gap-2 px-1"><span class="w-1 h-4 rounded-full ${accentBarClass}"></span><p class="text-sm font-black text-neutral-900">${dateLabel}</p></div>`;
+
+            for (const item of items) {
+              const timeParts = (item.ora || '08:00').substring(0, 5).split(':');
+              const startH = parseInt(timeParts[0] || '8', 10);
+              const startM = parseInt(timeParts[1] || '0', 10);
+              
+              const itemLoc = item.locatie || item.pacienti?.locatie || this.currentPatientLocation || 'Belaqva';
+              const isItemGhimbav = itemLoc.toLowerCase().includes('ghimbav');
+              
+              // Belaqva = Galben (bg-brand-primary text-black) | Ghimbav = Roz (bg-brand-secondary text-white)
+              const cardBg = isItemGhimbav ? 'bg-brand-secondary text-white' : 'bg-brand-primary text-black';
+
+              html += `
+                <div class="relative rounded-2xl overflow-hidden ${cardBg} shadow-sm">
+                  <div class="relative flex items-center gap-3 px-4 py-3.5 min-h-[56px]">
+                    <!-- Watermark Time -->
+                    <div class="absolute left-2 top-0 bottom-0 font-black text-[2.5rem] leading-[0.8] opacity-40 pointer-events-none tracking-tighter flex items-center justify-start z-0 w-14">
+                      <div class="flex items-start">
+                        ${startH.toString().padStart(2, '0')}<span class="text-sm mt-0.5 ml-0.5">${startM.toString().padStart(2, '0')}</span>
+                      </div>
+                    </div>
+                    <!-- Content -->
+                    <div class="relative z-10 flex items-center justify-between w-full pl-16">
+                      <div class="min-w-0 flex-1">
+                        <span class="block font-bold text-sm truncate">${this.currentPatientName}</span>
+                        <span class="block text-xs font-bold opacity-75 mt-0.5">• ${itemLoc}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+            html += `</div>`;
+          }
+
+          this.sessionsListContainer.innerHTML = html;
+        }
+      } catch (err: any) {
+        console.error('Eroare încărcare ședințe viitoare:', err);
+        if (this.loadingState) this.loadingState.classList.add('hidden');
+        if (this.emptyState) {
+          this.emptyState.classList.remove('hidden');
+          const p = this.emptyState.querySelector('p:last-child');
+          if (p) p.textContent = 'A apărut o eroare la citirea programărilor: ' + (err.message || err);
+        }
+      }
+    }
+
+    private adjustTextareaHeight() {
+      if (!this.messageTextarea) return;
+      this.messageTextarea.style.height = 'auto';
+      const newHeight = Math.max(this.messageTextarea.scrollHeight + 4, 110);
+      this.messageTextarea.style.height = `${newHeight}px`;
+    }
+
+    private bindEvents() {
+      if (!this.sheet) return;
+
+      // Auto-resize on edit
+      if (this.messageTextarea && (this.messageTextarea as any).dataset.autoResizeBound !== 'true') {
+        (this.messageTextarea as any).dataset.autoResizeBound = 'true';
+        this.messageTextarea.addEventListener('input', () => this.adjustTextareaHeight());
+      }
+
+      // Click outside / backdrop click
+      if (this.overlay && this.overlay.dataset.clickBound !== 'true') {
+        this.overlay.dataset.clickBound = 'true';
+        this.overlay.addEventListener('click', () => this.close());
+      }
+
+      // Copy Button
+      const copyBtn = document.getElementById('btn-copy-schedule');
+      if (copyBtn && copyBtn.dataset.bound !== 'true') {
+        copyBtn.dataset.bound = 'true';
+        copyBtn.addEventListener('click', async () => {
+          const text = (document.getElementById('share-message-textarea') as HTMLTextAreaElement)?.value || '';
+          if (!text) return;
+
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(text);
+            } else {
+              // Fallback
+              const ta = document.createElement('textarea');
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              document.body.removeChild(ta);
+            }
+            (window as any).showToast?.('Programul a fost copiat în clipboard!', 'success');
+          } catch (err) {
+            console.error('Eroare copiere:', err);
+            (window as any).showToast?.('Nu s-a putut copia textul.', 'error');
+          }
+        });
+      }
+
+      // Share Button (WhatsApp / Native Web Share)
+      const shareBtn = document.getElementById('btn-share-schedule');
+      if (shareBtn && shareBtn.dataset.bound !== 'true') {
+        shareBtn.dataset.bound = 'true';
+        shareBtn.addEventListener('click', async () => {
+          const text = (document.getElementById('share-message-textarea') as HTMLTextAreaElement)?.value || '';
+          if (!text) return;
+
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: `Program ședințe - ${this.currentPatientName}`,
+                text: text
+              });
+              return;
+            } catch (err: any) {
+              // Ignore AbortError if user simply dismissed the share sheet
+              if (err.name !== 'AbortError') {
+                console.warn('Fallback din navigator.share:', err);
+              } else {
+                return;
+              }
+            }
+          }
+
+          // Fallback direct WhatsApp URL
+          let cleanPhone = (this.currentPatientPhone || '').replace(/[^0-9]/g, '');
+          if (cleanPhone.startsWith('07')) {
+            cleanPhone = '4' + cleanPhone; // Romania prefix +40
+          }
+          const waUrl = cleanPhone 
+            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`
+            : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+          window.open(waUrl, '_blank');
+        });
+      }
+
+      // Dedicated drag handle gesture
+      const dragHandle = document.getElementById('share-schedule-drag-handle');
+      if (dragHandle && dragHandle.dataset.bound !== 'true') {
+        dragHandle.dataset.bound = 'true';
+        let handleStartY = 0;
+        let handleCurrentY = 0;
+        let handleDragging = false;
+        let handleStartTime = 0;
+
+        dragHandle.addEventListener('touchstart', (e: TouchEvent) => {
+          e.stopPropagation();
+          handleStartY = e.touches[0].clientY;
+          handleCurrentY = handleStartY;
+          handleDragging = true;
+          handleStartTime = Date.now();
+          if (this.sheet) this.sheet.style.transition = 'none';
+        }, { passive: true });
+
+        dragHandle.addEventListener('touchmove', (e: TouchEvent) => {
+          e.stopPropagation();
+          if (!handleDragging) return;
+          handleCurrentY = e.touches[0].clientY;
+          const deltaY = handleCurrentY - handleStartY;
+          if (deltaY > 0 && this.sheet) {
+            if (e.cancelable) e.preventDefault();
+            this.sheet.style.transform = `translateY(${deltaY}px)`;
+          }
+        }, { passive: false });
+
+        const onHandleEnd = () => {
+          if (!handleDragging) return;
+          handleDragging = false;
+          const deltaY = handleCurrentY - handleStartY;
+          const elapsed = Date.now() - handleStartTime;
+          const vel = deltaY / elapsed;
+          if (this.sheet) {
+            this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+            if (deltaY > 60 || (vel > 0.3 && deltaY > 15)) {
+              this.close();
+            } else {
+              this.sheet.style.transform = 'translateY(0)';
+            }
+          }
+        };
+        dragHandle.addEventListener('touchend', onHandleEnd);
+        dragHandle.addEventListener('touchcancel', onHandleEnd);
+      }
+
+      // Body swipe-down to dismiss
+      if (this.sheet.dataset.swipeBound !== 'true') {
+        this.sheet.dataset.swipeBound = 'true';
+        this.sheet.addEventListener('touchstart', (e: any) => this.handleTouchStart(e), { passive: true });
+        this.sheet.addEventListener('touchmove', (e: any) => this.handleTouchMove(e), { passive: false });
+        this.sheet.addEventListener('touchend', () => this.handleTouchEnd(), { passive: true });
+        this.sheet.addEventListener('touchcancel', () => this.cancelDrag(), { passive: true });
+      }
+    }
+
+    private handleTouchStart(e: TouchEvent) {
+      if (!e.touches || e.touches.length === 0) return;
+      this.startTime = Date.now();
+      this.startY = e.touches[0].clientY;
+      this.currentY = this.startY;
+      this.startX = e.touches[0].clientX;
+      this.dragEngaged = false;
+
+      const target = e.target as HTMLElement;
+      const isInputTarget = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      if (isInputTarget || (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName))) {
+        this.scrollAtTop = false;
+        return;
+      }
+
+      const scrollArea = this.sheet?.querySelector('.overflow-y-auto');
+      this.scrollAtTop = !scrollArea || scrollArea.scrollTop <= 0;
+    }
+
+    private handleTouchMove(e: TouchEvent) {
+      if (!this.sheet || !e.touches || e.touches.length === 0) return;
+      this.currentY = e.touches[0].clientY;
+      const currentX = e.touches[0].clientX;
+      const deltaY = this.currentY - this.startY;
+      const deltaX = currentX - this.startX;
+
+      if (!this.dragEngaged && Math.abs(deltaY) > 8) {
+        if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY > 0 && this.scrollAtTop) {
+          this.dragEngaged = true;
+          this.sheet.style.transition = 'none';
+        }
+      }
+
+      if (this.dragEngaged && deltaY > 0) {
+        if (e.cancelable) e.preventDefault();
+        this.sheet.style.transform = `translateY(${deltaY}px)`;
+      }
+    }
+
+    private handleTouchEnd() {
+      if (!this.sheet || !this.dragEngaged) {
+        this.dragEngaged = false;
+        return;
+      }
+      this.dragEngaged = false;
+      const deltaY = this.currentY - this.startY;
+      const timeElapsed = Date.now() - this.startTime;
+      const velocity = deltaY / timeElapsed;
+      this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+
+      if (deltaY > 60 || (velocity > 0.3 && deltaY > 15)) {
+        this.close();
+      } else {
+        this.sheet.style.transform = 'translateY(0)';
+      }
+    }
+
+    private cancelDrag() {
+      this.dragEngaged = false;
+      if (this.sheet) {
+        this.sheet.style.transition = 'transform 350ms cubic-bezier(0.32, 0.72, 0, 1)';
+        this.sheet.style.transform = 'translateY(0)';
+      }
+    }
+
+    open() {
+      if (!this.sheet || !this.overlay) return;
+      this.isOpen = true;
+
+      this.sheet.style.maxHeight = `${window.innerHeight * 0.9}px`;
+      if (document.activeElement && 'blur' in document.activeElement) {
+        (document.activeElement as HTMLElement).blur();
+      }
+
+      this.sheet.dataset.open = 'true';
+      void this.sheet.offsetWidth;
+
+      this.overlay.classList.remove('opacity-0', 'pointer-events-none');
+      this.overlay.classList.add('pointer-events-auto');
+      this.sheet.classList.remove('translate-y-full');
+      lockBodyScroll();
+
+      requestAnimationFrame(() => this.adjustTextareaHeight());
+      setTimeout(() => this.adjustTextareaHeight(), 100);
+    }
+
+    close() {
+      if (!this.sheet || !this.overlay || !this.isOpen) return;
+      this.isOpen = false;
+      unlockBodyScroll();
+
+      this.sheet.style.transition = '';
+      this.sheet.style.transform = '';
+
+      this.overlay.classList.add('opacity-0', 'pointer-events-none');
+      this.overlay.classList.remove('pointer-events-auto');
+      this.sheet.classList.add('translate-y-full');
+
+      setTimeout(() => {
+        if (!this.isOpen && this.sheet) {
+          this.sheet.dataset.open = 'false';
+          this.currentPatientId = null;
+        }
+      }, 500);
+    }
+
+    private formatDateForMessage(dateStr: string): string {
+      if (!dateStr) return '';
+      const d = parseLocalDate(dateStr);
+
+      const daysUpper = ['DUMINICĂ', 'LUNI', 'MARȚI', 'MIERCURI', 'JOI', 'VINERI', 'SÂMBĂTĂ'];
+      const monthsLower = [
+        'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie',
+        'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'
+      ];
+
+      const dayOfWeek = daysUpper[d.getDay()];
+      const dayNum = d.getDate();
+      const monthName = monthsLower[d.getMonth()];
+
+      return `${dayOfWeek}, ${dayNum} ${monthName}`;
+    }
+
+    private formatTimeClean(timeStr: string): string {
+      if (!timeStr) return '8:00';
+      const parts = timeStr.substring(0, 5).split(':');
+      const h = parseInt(parts[0] || '8', 10);
+      const m = parts[1] || '00';
+      return `${h}:${m}`;
+    }
+
+    private formatDayAndMonth(dateStr: string): string {
+      return this.formatDateForMessage(dateStr);
+    }
+  }
+
+  function initShareScheduleSheet() {
+    if (!(window as any)._shareScheduleSheetWindowListenerBound) {
+      const handler = (e: Event) => {
+        (window as any).currentShareScheduleSheetManager?.handleOpenEvent(e as CustomEvent);
+      };
+      window.addEventListener('openShareScheduleSheet', handler);
+      window.addEventListener('openShareSchedule', handler);
+      (window as any)._shareScheduleSheetWindowListenerBound = true;
+    }
+
+    if (document.getElementById('share-schedule-sheet')) {
+      (window as any).currentShareScheduleSheetManager = new ShareScheduleSheetManager();
+    }
+  }
+
+  document.addEventListener('astro:page-load', initShareScheduleSheet);
+  document.addEventListener('DOMContentLoaded', initShareScheduleSheet);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initShareScheduleSheet();
+  }
+</script>

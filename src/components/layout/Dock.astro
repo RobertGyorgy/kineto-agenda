@@ -1,0 +1,232 @@
+---
+const currentPath = Astro.url.pathname;
+
+// SVG Icons mapping
+const icons = {
+  home: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>`,
+  calendar: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
+  layers: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`,
+  reports: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
+  profile: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`,
+};
+
+const navItems = [
+  { id: 'calendar', path: '/dashboard/calendar', icon: icons.calendar, label: 'Calendar' },
+  { id: 'layers', path: '/dashboard/patients', icon: icons.layers, label: 'Pacienți' },
+  { id: 'home', path: '/dashboard', icon: icons.home, label: 'Acasă' },
+  { id: 'reports', path: '/dashboard/reports', icon: icons.reports, label: 'Rapoarte' },
+  { id: 'profile', path: '/dashboard/settings', icon: icons.profile, label: 'Setări' },
+];
+---
+
+<div id="persistent-dock" transition:persist class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-5 sm:px-8 pointer-events-none">
+  <nav
+    id="dock-nav"
+    class="w-full rounded-[2.5rem] px-2 py-2 backdrop-blur-2xl bg-white/60 border border-transparent dark:bg-black/60 dark:border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-between pointer-events-auto relative overflow-hidden"
+  >
+  <!-- Absolute Sliding Pill Background -->
+  <div
+    id="dock-active-pill"
+    class="absolute top-1/2 h-12 rounded-full bg-brand-primary pointer-events-none"
+    style="left: 0; width: 0; opacity: 0; transition: transform 450ms cubic-bezier(0.34, 1.36, 0.64, 1), width 450ms cubic-bezier(0.34, 1.36, 0.64, 1), opacity 300ms ease;"
+  ></div>
+
+  {navItems.map((item, index) => {
+    const isActive = currentPath === item.path || (item.path !== '/dashboard' && currentPath.startsWith(item.path));
+    const isHome = item.id === 'home';
+    
+    // Make Home always thicker, and other icons thicker only when active
+    const strokeWidth = (isHome || isActive) ? '2.5' : '1.75';
+    const iconHtml = item.icon.replace('stroke-width="2"', `stroke-width="${strokeWidth}"`);
+    
+    return (
+      <a
+        href={item.path}
+        data-dock-item
+        data-astro-prefetch="load"
+        data-astro-history="replace"
+        data-active={isActive ? "true" : "false"}
+        data-index={index}
+        data-id={item.id}
+        aria-label={item.label}
+        class={`relative z-10 flex items-center justify-center w-14 h-12 rounded-full transition-colors active:scale-90 ${
+          isActive ? 'text-black' : 'text-brand-primary hover:opacity-80'
+        }`}
+      >
+        <Fragment set:html={iconHtml} />
+        {item.id === 'home' && (
+          <span id="home-notification-dot" class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500 hidden"></span>
+        )}
+        {item.id === 'layers' && (
+          <span id="patients-notification-dot" class="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500 hidden"></span>
+        )}
+      </a>
+    );
+  })}
+</nav>
+</div>
+
+<script>
+  // Dock persistent — se inițializează o singură dată, iar la navigare doar se
+  // updatează starea activă și poziția pill-ului, fără re-animare dublă.
+  function updateDockVisibility() {
+    const dock = document.getElementById('persistent-dock');
+    if (!dock) return;
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('section')) {
+      dock.classList.add('hidden');
+    } else {
+      dock.classList.remove('hidden');
+    }
+  }
+
+  function movePillTo(item: HTMLElement, animate: boolean = true) {
+    const activePill = document.getElementById('dock-active-pill');
+    if (!activePill) return;
+
+    activePill.style.transition = animate
+      ? 'transform 450ms cubic-bezier(0.34, 1.36, 0.64, 1), width 450ms cubic-bezier(0.34, 1.36, 0.64, 1), opacity 300ms ease'
+      : 'none';
+    activePill.style.opacity = '1';
+    activePill.style.width = `${item.offsetWidth}px`;
+    activePill.style.transform = `translate(${item.offsetLeft}px, -50%)`;
+  }
+
+  function setItemVisualState(item: HTMLElement, isActive: boolean) {
+    const isHome = item.getAttribute('data-id') === 'home';
+
+    if (isActive) {
+      item.classList.remove('text-brand-primary', 'hover:opacity-80');
+      item.classList.add('text-black');
+    } else {
+      item.classList.remove('text-black');
+      item.classList.add('text-brand-primary', 'hover:opacity-80');
+    }
+
+    const svg = item.querySelector('svg');
+    if (svg) {
+      const strokeWidth = (isHome || isActive) ? '2.5' : '1.75';
+      svg.setAttribute('stroke-width', strokeWidth);
+    }
+  }
+
+  function updateDockActiveState(animate: boolean = true) {
+    updateDockVisibility();
+    const dockNav = document.getElementById('dock-nav');
+    if (!dockNav) return;
+
+    const currentPath = window.location.pathname;
+    const items = dockNav.querySelectorAll('[data-dock-item]');
+    let activeItem: HTMLElement | null = null;
+
+    items.forEach((item) => {
+      const href = item.getAttribute('href') || '';
+      const isActive = currentPath === href || (href !== '/dashboard' && currentPath.startsWith(href));
+
+      if (isActive) {
+        activeItem = item as HTMLElement;
+      }
+      setItemVisualState(item as HTMLElement, isActive);
+    });
+
+    if (!activeItem && items.length > 0) {
+      activeItem = items[0] as HTMLElement;
+    }
+
+    if (activeItem) {
+      movePillTo(activeItem, animate);
+    }
+  }
+
+  async function updateDockBadges() {
+    const homeDot = document.getElementById('home-notification-dot');
+    const patientsDot = document.getElementById('patients-notification-dot');
+
+    try {
+      const [{ getPendingWrapUps }, { getPatients, isRenewalDismissed }] = await Promise.all([
+        import('../../lib/services/appointmentService'),
+        import('../../lib/services/patientService'),
+      ]);
+
+      const [pendingWrapUps, patients] = await Promise.all([
+        getPendingWrapUps(),
+        getPatients(),
+      ]);
+
+      // Home: ședințe trecute care trebuie confirmate
+      homeDot?.classList.toggle('hidden', pendingWrapUps.length === 0);
+
+      // Patients: abonamente terminate/ultima ședință NEdismissuite OR pacienți neachitați
+      const needsAttentionPatients = patients.some((p: any) => {
+        const subscriptionAlert = ['terminat', 'ultima_sedinta'].includes(p.status_abonament) && !isRenewalDismissed(p.id);
+        const unpaidPatient = p.achitat === false;
+        return subscriptionAlert || unpaidPatient;
+      });
+      patientsDot?.classList.toggle('hidden', !needsAttentionPatients);
+    } catch {
+      homeDot?.classList.add('hidden');
+      patientsDot?.classList.add('hidden');
+    }
+  }
+
+  function ensureDockInBody() {
+    const dock = document.getElementById('persistent-dock');
+    if (dock && dock.parentElement !== document.body) {
+      document.body.appendChild(dock);
+    }
+  }
+
+  function initDockOnce() {
+    if ((window as any).__kinetoDockInitialized) return;
+    (window as any).__kinetoDockInitialized = true;
+
+    ensureDockInBody();
+
+    const dockNav = document.getElementById('dock-nav');
+
+    // Initial paint with animation so the dock slides in naturally
+    updateDockActiveState(true);
+    updateDockBadges();
+
+    window.addEventListener('patientsUpdated', updateDockBadges);
+    window.addEventListener('sessionsUpdated', updateDockBadges);
+    window.addEventListener('paymentsUpdated', updateDockBadges);
+    document.addEventListener('astro:after-swap', updateDockBadges);
+
+    dockNav?.querySelectorAll('[data-dock-item]').forEach((item) => {
+      const handleDockTap = (e: Event) => {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        const target = e.currentTarget as HTMLElement;
+        const href = target.getAttribute('href');
+        dockNav.querySelectorAll('[data-dock-item]').forEach((i) => setItemVisualState(i as HTMLElement, false));
+        setItemVisualState(target, true);
+        movePillTo(target, true);
+
+        if (href && window.location.pathname !== href) {
+          import('astro:transitions/client').then(({ navigate }) => {
+            navigate(href, { history: 'replace' });
+          }).catch(() => {});
+        }
+      };
+
+      item.addEventListener('click', handleDockTap);
+    });
+
+    // After the new page is swapped in, just reconcile state without animating
+    document.addEventListener('astro:after-swap', () => {
+      ensureDockInBody();
+      updateDockActiveState(false);
+    });
+    // On full page load, reconcile (usually redundant because click already moved it)
+    document.addEventListener('astro:page-load', () => {
+      ensureDockInBody();
+      updateDockActiveState(false);
+    });
+    window.addEventListener('resize', () => updateDockActiveState(false));
+  }
+
+  document.addEventListener('DOMContentLoaded', initDockOnce);
+  document.addEventListener('astro:page-load', initDockOnce);
+</script>

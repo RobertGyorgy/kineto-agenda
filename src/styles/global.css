@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Semantic Light Palette / Modern Task App Tokens */
+  --color-brand-primary: 255 193 7;    /* Yellow (#ffc107) */
+  --color-brand-secondary: 201 50 99;  /* Pink (#c93263) */
+  --color-brand-accent: 16 185 129;    /* Green (#10b981) */
+  
+  --color-surface-base: 234 233 228;   /* Warm Beige (#eae9e4) */
+  --color-surface-card: 255 255 255;   /* White (#ffffff) */
+  --color-surface-panel: 243 244 246;  /* Gray 100 for light panels */
+  --color-surface-dark: 26 26 26;      /* Dark dock/cards (#1a1a1a) */
+  
+  --color-text-main: 15 23 42;         /* Slate 900 (#0f172a) */
+  --color-text-muted: 100 116 139;     /* Slate 500 (#64748b) */
+  --color-text-inverse: 255 255 255;   /* White (#ffffff) */
+  
+  --color-border-subtle: 226 232 240;
+  --color-border-strong: 203 213 225;
+
+  --color-state-success: 16 185 129;
+  --color-state-warning: 245 158 11;
+  --color-state-danger: 239 68 68;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    max-width: 100vw;
+    width: 100%;
+    min-height: 100dvh;
+    background-color: rgb(var(--color-surface-base));
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-x: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    touch-action: pan-y;
+  }
+
+  /* Re-enable selection inside inputs / textareas so users can still edit text */
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+    user-select: auto;
+  }
+
+  /* Hide scrollbars everywhere while keeping scrolling functional */
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Prevent automatic zoom on iOS Safari by enforcing min 16px font size on inputs */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Sheet FOUC guard: hide all bottom-sheet roots until JS explicitly opens them.
+     This prevents the hosted build from flashing popups during the first frames. */
+  [data-sheet-root]:not([data-open="true"]) {
+    display: none !important;
+  }
+
+  /* Fluid Page Loading & Transitions */
+  .page-fade-in {
+    animation: pageFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes pageFadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Reduce abrupt skeleton flash by softly fading content */
+  .skeleton-fade {
+    transition: opacity 0.2s ease-out;
+  }
+}
