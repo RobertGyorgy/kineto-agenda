@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createSupabaseServerClient } from '../../lib/supabaseServer';
+import { isDemoUserId } from '../../lib/demo/config';
 
 export const prerender = false;
 
@@ -22,6 +23,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(
         JSON.stringify({ error: 'Trebuie să fii autentificat.' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Contul demo nu primește push și nu scrie în DB (trigger-ul blochează oricum).
+    if (isDemoUserId(user.id)) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 

@@ -111,6 +111,21 @@ import '../styles/global.css';
             >
               Intră în cont
             </button>
+
+            <!-- Buton Cont Demo -->
+            <button
+              type="button"
+              id="demo-login-btn"
+              class="w-full py-3.5 px-6 bg-surface-base/80 border border-border-subtle/80 text-text-main font-extrabold rounded-2xl transition-all active:scale-[0.98] text-sm sm:text-base cursor-pointer text-center flex items-center justify-center gap-2"
+            >
+              <svg class="w-5 h-5 text-brand-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span id="demo-login-btn-text">Cont demo</span>
+            </button>
+            <p class="text-[11px] font-semibold text-text-muted/80 text-center leading-snug">
+              Explorezi aplicația cu date de exemplu — modificările tale rămân doar pe acest dispozitiv.
+            </p>
           </form>
         </div>
       </div>
@@ -119,17 +134,39 @@ import '../styles/global.css';
 
     <script>
       import { login } from '../lib/services/authService';
+      import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demo/config';
 
       async function initLoginPage() {
         const toggleBtn = document.getElementById('toggle-password');
         const passwordInput = document.getElementById('password') as HTMLInputElement | null;
         const loginForm = document.getElementById('login-form');
         const errEl = document.getElementById('login-error');
+        const demoBtn = document.getElementById('demo-login-btn');
+        const demoBtnText = document.getElementById('demo-login-btn-text');
 
         if (toggleBtn && passwordInput) {
           toggleBtn.addEventListener('click', () => {
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
+          });
+        }
+
+        if (demoBtn) {
+          demoBtn.addEventListener('click', async () => {
+            demoBtn.setAttribute('disabled', 'true');
+            if (demoBtnText) demoBtnText.textContent = 'Se deschide contul demo…';
+            if (errEl) errEl.classList.add('hidden');
+            try {
+              await login(DEMO_EMAIL, DEMO_PASSWORD);
+              window.location.replace('/dashboard');
+            } catch (err: any) {
+              if (errEl) {
+                errEl.textContent = 'Contul demo nu este disponibil momentan.';
+                errEl.classList.remove('hidden');
+              }
+              demoBtn.removeAttribute('disabled');
+              if (demoBtnText) demoBtnText.textContent = 'Cont demo';
+            }
           });
         }
 

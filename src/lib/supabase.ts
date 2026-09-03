@@ -5,6 +5,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './database.types';
 import { captureFetchError } from './errorLogger';
+import { wrapSupabaseClient } from './demo/intercept';
 
 // Polyfill WebSocket pentru Node.js < 22 (Astro dev server / SSR).
 // @supabase/realtime-js are nevoie de WebSocket global; în Node 20 lipsește.
@@ -25,7 +26,11 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('❌ Lipsesc variabilele de mediu Supabase. Verifică fișierul .env');
 }
 
-export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseKey);
+const realClient = createBrowserClient<Database>(supabaseUrl, supabaseKey);
+
+// Cont demo: același client, dar `from()`/`rpc()` sunt rulate local
+// (localStorage) când sesiunea aparține contului demo.
+export const supabase = wrapSupabaseClient(realClient);
 
 // ── Helper: current authenticated user (throws if not signed in) ──
 export async function getCurrentUser() {
