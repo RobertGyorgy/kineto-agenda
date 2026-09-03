@@ -28,16 +28,23 @@ interface DemoStore {
 }
 
 export function loadStore(): DemoStore {
+  let store: DemoStore | undefined;
+  let fresh = false;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.tables) return parsed;
+      if (parsed && parsed.tables) store = parsed;
     }
   } catch { /* ignore */ }
-  const seeded = seedStore();
-  saveStore(seeded);
-  return seeded;
+  if (!store) {
+    store = seedStore();
+    fresh = true;
+  }
+  // Autoprogramare: completează programările lipsă pentru următoarele 2 săptămâni
+  const changed = autoSchedule(store);
+  if (changed || fresh) saveStore(store);
+  return store;
 }
 
 export function saveStore(store: DemoStore) {
@@ -374,6 +381,101 @@ export function runDemoRpc(fn: string, args: any): ExecResult {
   return { data: null, error: null };
 }
 
+// ── Autoprogramare ────────────────────────────────────────────
+
+/** Extrage numărul de ședințe/săptămână din câmpul `frecventa` (ex: "2x/săptămână"). */
+function weeklyFrequency(p: any): number {
+  const m = String(p.frecventa || '').match(/(\d+)/);
+  if (m) return Math.max(1, Math.min(7, parseInt(m[1], 10)));
+  return 1;
+}
+
+/**
+ * Completează automat programările pacienților demo pentru următoarele
+ * 14 zile, respectând programul de lucru, pauza de masă, durata ședinței
+ * + pauza dintre pacienți și frecvența fiecărui pacient.
+ * Idempotent — adaugă doar programările lipsă. Returnează true dacă a modificat.
+ */
+function autoSchedule(store: DemoStore): boolean {
+  const settings = (store.tables['settings'] || [])[0] || {};
+  const duration = settings.session_duration ?? 50;
+  const step = duration + (settings.break_buffer ?? 10);
+  const parseT = (t: any, fh: number, fm: number) => {
+    const [h, m] = String(t || '').substring(0, 5).split(':').map(Number);
+    return (Number.isFinite(h) ? h : fh) * 60 + (Number.isFinite(m) ? m : fm);
+  };
+  const workStart = parseT(settings.work_start, 8, 0);
+  const workEnd = parseT(settings.work_end, 20, 0);
+  const lunchStart = parseT(settings.lunch_start, 12, 0);
+  const lunchEnd = parseT(settings.lunch_end, 12, 30);
+  const workingDays: number[] = Array.isArray(settings.zile_lucratoare) && settings.zile_lucratoare.length
+    ? settings.zile_lucratoare
+    : [1, 2, 3, 4, 5];
+
+  const programari = store.tables['programari'] || (store.tables['programari'] = []);
+  const pacienti = (store.tables['pacienti'] || []).filter((p) => p.status_abonament !== 'terminat');
+  if (pacienti.length === 0) return false;
+
+  const fmtTime = (total: number) => `${pad(Math.floor(total / 60))}:${pad(total % 60)}:00`;
+  const taken = new Set(programari.filter((a) => a.status !== 'anulat').map((a) => `${a.data}|${a.ora}`));
+
+  // Ultima dată cu programare activă pentru fiecare pacient
+  const lastDate = new Map<string, string>();
+  for (const p of pacienti) {
+    const dates = programari
+      .filter((a) => a.pacient_id === p.id && a.status !== 'anulat')
+      .map((a) => a.data)
+      .sort();
+    lastDate.set(p.id, dates.length ? dates[dates.length - 1] : '');
+  }
+  const daysDiff = (from: string, to: string) =>
+    Math.round((new Date(to + 'T00:00:00').getTime() - new Date(from + 'T00:00:00').getTime()) / 86400000);
+
+  const now = new Date();
+  let changed = false;
+
+  for (let offset = 1; offset <= 14; offset++) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    if (!workingDays.includes(d.getDay())) continue;
+    const dStr = dateStr(d);
+
+    // Sloturile libere ale zilei
+    const free: number[] = [];
+    for (let cursor = workStart; cursor + duration <= workEnd; cursor += step) {
+      if (cursor < lunchEnd && cursor + duration > lunchStart) continue;
+      const ora = fmtTime(cursor);
+      if (!taken.has(`${dStr}|${ora}`)) free.push(cursor);
+    }
+
+    for (const p of pacienti) {
+      if (free.length === 0) break;
+      const spacing = Math.max(1, Math.round(7 / weeklyFrequency(p)));
+      const ld = lastDate.get(p.id) || '';
+      if (ld && daysDiff(ld, dStr) < spacing) continue;
+
+      const cursor = free.shift()!;
+      programari.push({
+        id: uuid(),
+        user_id: DEMO_USER_ID,
+        pacient_id: p.id,
+        data: dStr,
+        ora: fmtTime(cursor),
+        locatie: p.locatie || 'Belaqva',
+        status: 'programat',
+        note: null,
+        motiv: null,
+        group_id: null,
+        created_at: now.toISOString(),
+      });
+      taken.add(`${dStr}|${fmtTime(cursor)}`);
+      lastDate.set(p.id, dStr);
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 // ── Date inițiale (seed) ──────────────────────────────────────
 
 function seedStore(): DemoStore {
@@ -410,17 +512,28 @@ function seedStore(): DemoStore {
   ];
 
   const programari: any[] = [];
+  const seedTaken = new Set<string>();
   const mkAppt = (patientIdx: number, dayOffset: number, ora: string, status = 'programat', extra: Partial<any> = {}) => {
     const p = pacienti[patientIdx];
     const d = daysAhead(dayOffset);
     // Sari peste weekend pentru programările viitoare
     if (dayOffset > 0 && (d.getDay() === 0 || d.getDay() === 6)) d.setDate(d.getDate() + (d.getDay() === 6 ? 2 : 1));
+    // Dacă mutarea weekendului a creat suprapunere, deplasează cu câte o oră
+    let [h, m] = ora.substring(0, 5).split(':').map(Number);
+    let data = dateStr(d);
+    let guard = 0;
+    while (seedTaken.has(`${data}|${pad(h)}:${pad(m)}:00`) && guard++ < 12) {
+      h += 1;
+      if (h >= 20) { h = 8; d.setDate(d.getDate() + 1); data = dateStr(d); }
+    }
+    const oraStr = `${pad(h)}:${pad(m)}:00`;
+    seedTaken.add(`${data}|${oraStr}`);
     programari.push({
       id: uuid(),
       user_id: DEMO_USER_ID,
       pacient_id: p.id,
-      data: dateStr(d),
-      ora,
+      data,
+      ora: oraStr,
       locatie: p.locatie,
       status,
       note: extra.note ?? null,
