@@ -63,9 +63,16 @@ if (typeof window !== 'undefined') {
 
       return response;
     } catch (fetchErr: any) {
-      // Auto-retry pentru micro-întreruperi de rețea (ERR_CONNECTION_CLOSED / QUIC drop)
+      // Auto-retry pentru micro-întreruperi de rețea (ERR_CONNECTION_CLOSED / QUIC drop).
+      // DOAR pentru requesturi idempotente (GET/HEAD/OPTIONS): la POST/PATCH/PUT/DELETE
+      // cererea poate fi ajuns deja la server, iar re-trimiterea ar duplica write-ul
+      // (ex. dublare plată / programare).
       const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || '';
-      if (url && url.includes(supabaseUrl)) {
+      const method = (typeof args[0] === 'string'
+        ? args[1]?.method ?? 'GET'
+        : (args[0] as Request)?.method ?? 'GET').toUpperCase();
+      const isIdempotent = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+      if (isIdempotent && url && url.includes(supabaseUrl)) {
         try {
           await new Promise((r) => setTimeout(r, 400));
           return await originalFetch(...args);

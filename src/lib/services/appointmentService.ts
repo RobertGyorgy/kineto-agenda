@@ -88,18 +88,21 @@ export async function swapAppointmentPatients(idA: string, idB: string) {
 
   const pacientA = a.pacient_id;
   const pacientB = b.pacient_id;
+  const user = await getCurrentUser();
 
   try {
     const { error: updA } = await (supabase as any)
       .from('programari')
       .update({ pacient_id: pacientB })
-      .eq('id', idA);
+      .eq('id', idA)
+      .eq('user_id', user.id);
     if (updA) throw updA;
 
     const { error: updB } = await (supabase as any)
       .from('programari')
       .update({ pacient_id: pacientA })
-      .eq('id', idB);
+      .eq('id', idB)
+      .eq('user_id', user.id);
     if (updB) {
       // Rollback best-effort
       await (supabase as any).from('programari').update({ pacient_id: pacientA }).eq('id', idA);
@@ -149,10 +152,12 @@ export async function getAppointmentsByRange(startDate: string, endDate: string)
 
 // ── Toate programările unui pacient ───────────────────────────
 export async function getAppointmentsByPatient(patientId: string): Promise<Programare[]> {
+  const user = await getCurrentUser();
   const { data, error } = await supabase
     .from('programari')
     .select('*')
     .eq('pacient_id', patientId)
+    .eq('user_id', user.id)
     .order('data', { ascending: false });
 
   if (error) throw new Error('Eroare la citirea programărilor pacientului: ' + error.message);

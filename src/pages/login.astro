@@ -194,8 +194,15 @@ import '../styles/global.css';
         }
       }
 
-      document.addEventListener('DOMContentLoaded', initLoginPage);
-      document.addEventListener('astro:page-load', initLoginPage);
+      // Pagina nu folosește ClientRouter, deci 'astro:page-load' NU se declanșează niciodată
+      // aici — init trebuie legat de încărcarea documentului (altfel pagina e moartă:
+      // nici submit, nici toggle parolă nu funcționează). Legăm o singură dată,
+      // în funcție de stadiul încărcării documentului.
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLoginPage, { once: true });
+      } else {
+        initLoginPage();
+      }
     </script>
   </body>
 </html>

@@ -7,6 +7,10 @@ import type { PacientInsert, PacientUpdate, PacientView } from '../database.type
 import { toLocalISOString } from '../../utils/date';
 
 // ── Listare pacienți (cu filtru opțional și verificare inactivitate 30 zile) ─────────────────────
+// Sweep-ul de inactivare rulează o singură dată pe sesiune de pagină — nu la fiecare
+// citire. Interogarea principală de mai jos (pacienti_view) rulează de fiecare dată.
+let inactivitySweepDone = false;
+
 export async function getPatients(filter?: {
   locatie?: 'Belaqva' | 'Ghimbav';
   achitat?: boolean;
@@ -14,38 +18,44 @@ export async function getPatients(filter?: {
   inactivi?: boolean;
 }): Promise<PacientView[]> {
   // 1. Verificăm și marcăm pacienții neprogramați de peste 30 de zile ca inactivi
-  const date30DaysAgo = new Date();
-  date30DaysAgo.setDate(date30DaysAgo.getDate() - 30);
-  const iso30DaysAgo = toLocalISOString(date30DaysAgo);
+  if (!inactivitySweepDone) {
+    inactivitySweepDone = true;
+    const date30DaysAgo = new Date();
+    date30DaysAgo.setDate(date30DaysAgo.getDate() - 30);
+    const iso30DaysAgo = toLocalISOString(date30DaysAgo);
+    const today = toLocalISOString(new Date());
 
-  try {
-    const currentUser = await getCurrentUser();
+    try {
+      const currentUser = await getCurrentUser();
 
-    // Preluăm toate programările recente
-    const { data: recentAppts } = await (supabase as any)
-      .from('programari')
-      .select('pacient_id, data')
-      .eq('user_id', currentUser.id)
-      .gte('data', iso30DaysAgo);
+      // Preluăm toate programările recente (trecute + de azi; o programare
+      // viitoare NU contează ca activitate recentă)
+      const { data: recentAppts } = await (supabase as any)
+        .from('programari')
+        .select('pacient_id, data')
+        .eq('user_id', currentUser.id)
+        .gte('data', iso30DaysAgo)
+        .lte('data', today);
 
-    const activePatientIds = new Set((recentAppts || []).map((a: any) => a.pacient_id));
+      const activePatientIds = new Set((recentAppts || []).map((a: any) => a.pacient_id));
 
-    // Preluăm pacienții existenți
-    const { data: allPatients } = await (supabase as any)
-      .from('pacienti')
-      .select('id, created_at, status_abonament')
-      .eq('user_id', currentUser.id);
-    if (allPatients) {
-      for (const p of allPatients as any[]) {
-        const isRecentCreated = new Date(p.created_at) >= date30DaysAgo;
-        // Dacă nu are ședințe în ultimele 30 zile și nu a fost creat în ultimele 30 zile -> inactivați
-        if (!activePatientIds.has(p.id) && !isRecentCreated && p.status_abonament !== 'inactiv') {
-          await (supabase as any).from('pacienti').update({ status_abonament: 'inactiv' }).eq('id', p.id).eq('user_id', currentUser.id);
+      // Preluăm pacienții existenți
+      const { data: allPatients } = await (supabase as any)
+        .from('pacienti')
+        .select('id, created_at, status_abonament')
+        .eq('user_id', currentUser.id);
+      if (allPatients) {
+        for (const p of allPatients as any[]) {
+          const isRecentCreated = new Date(p.created_at) >= date30DaysAgo;
+          // Dacă nu are ședințe în ultimele 30 zile și nu a fost creat în ultimele 30 zile -> inactivați
+          if (!activePatientIds.has(p.id) && !isRecentCreated && p.status_abonament !== 'inactiv') {
+            await (supabase as any).from('pacienti').update({ status_abonament: 'inactiv' }).eq('id', p.id).eq('user_id', currentUser.id);
+          }
         }
       }
+    } catch (e) {
+      console.error('Eroare verificare inactivitate pacienti:', e);
     }
-  } catch (e) {
-    console.error('Eroare verificare inactivitate pacienti:', e);
   }
 
   const user = await getCurrentUser();
@@ -76,10 +86,12 @@ export async function getPatients(filter?: {
 
 // ── Citire pacient unic ───────────────────────────────────────
 export async function getPatient(id: string): Promise<PacientView> {
+  const user = await getCurrentUser();
   const { data, error } = await supabase
     .from('pacienti_view')
     .select('*')
     .eq('id', id)
+    .eq('user_id', user.id)
     .single();
 
   if (error) throw new Error('Pacientul nu a fost găsit: ' + error.message);
@@ -204,96 +216,72 @@ export async function setPaymentStatus(id: string, achitat: boolean) {
 }
 
 // ── Adăugare plată custom (PaymentSheet) ──────────────────────
+// RPC atomic: inserează plata și recalculează `achitat` DOAR pentru pachetul
+// curent (plățile de la abonament_start; plățile pachetelor vechi nu contează).
 export async function addPayment(id: string, amount: number, markAchitat: boolean) {
-  // Salvare plată în Supabase (sursa unică de adevăr)
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Trebuie să fii autentificat pentru a adăuga o plată.');
-
-  const { error } = await (supabase as any).from('plati').insert({
-    pacient_id: id,
-    suma: amount,
-    data_platii: toLocalISOString(new Date()),
-    user_id: user.id
+  const { error } = await supabase.rpc('record_payment', {
+    p_pacient_id: id,
+    p_suma: amount,
+    p_mark_achitat: markAchitat,
   });
+
   if (error) {
-    console.error('[addPayment] insert error:', error);
+    console.error('[addPayment] record_payment error:', error);
     throw new Error('Eroare la salvarea plății: ' + error.message);
-  }
-
-  // Actualizăm statusul pacientului pe baza sumei totale achitate
-  const totalPaid = await getPatientPayments(id);
-  const patient = await getPatient(id);
-  const cost = patient?.cost || 0;
-
-  const shouldMarkAchitat = markAchitat || (cost > 0 && totalPaid >= cost);
-  const { error: updateErr } = await (supabase as any)
-    .from('pacienti')
-    .update({ achitat: shouldMarkAchitat })
-    .eq('id', id);
-
-  if (updateErr) {
-    console.error('[addPayment] achitat update error:', updateErr);
-    throw new Error('Eroare la actualizarea statusului de plată: ' + updateErr.message);
   }
 }
 
-// ── Reînnoire / Resetare pachet pacient (reia ședințele de la 0) ──
+// ── Reînnoire / pachet nou pacient (renew_subscription RPC) ──
+// Reînnoirea atomica deschide un pachet nou, poartă ședințele neacoperite din
+// pachetul anterior și PĂSTREAZĂ istoricul plăților (nu se șterge nimic din `plati`).
 export async function resetPatientSubscription(
-  id: string, 
-  newTotalSessions?: number, 
-  newCostTotal: number = 0, 
+  id: string,
+  newTotalSessions?: number,
+  newCostTotal: number = 0,
   paymentOption: { status: 'Neachitat' | 'Parțial' | 'Achitat'; paidAmount?: number } | boolean = false
 ): Promise<void> {
   const current = await getPatient(id);
-  // ✅ FIX: costul noului abonament ÎNLOCUIEȘTE costul vechi, nu se acumulează
+  // ✅ costul noului abonament ÎNLOCUIEȘTE costul vechi, nu se acumulează
   const nextTotal = newTotalSessions ?? (current.sedinte_total || 10);
   const nextCost = newCostTotal > 0 ? newCostTotal : (current.cost || 0);
 
-  let isAchitat = false;
+  let pStatus: 'Neachitat' | 'Parțial' | 'Achitat' = 'Neachitat';
   let amountToAdd = 0;
 
   if (typeof paymentOption === 'boolean') {
     if (paymentOption) {
       amountToAdd = nextCost;
-      isAchitat = true;
+      pStatus = 'Achitat';
     }
   } else if (paymentOption) {
     if (paymentOption.status === 'Achitat') {
       amountToAdd = nextCost;
-      isAchitat = true;
+      pStatus = 'Achitat';
     } else if (paymentOption.status === 'Parțial') {
       amountToAdd = paymentOption.paidAmount || 0;
-      isAchitat = false;
+      pStatus = 'Parțial';
     }
   }
 
-  // Reînnoirea înseamnă un pachet nou: resetăm contorul de ședințe folosite la 0
-  // și setăm noul total. Istoricul programărilor rămâne în DB.
-  // ✅ FIX: ștergem și plățile vechi la reînnoire (abonament nou = calcule noi)
-  try {
-    await (supabase as any).from('plati').delete().eq('pacient_id', id);
-  } catch (e) { console.warn('Eroare ștergere plăți la reînnoire:', e); }
+  // Curățim doar fallback-ul localStorage vechi (date stale de dinainte de
+  // sincronizarea plăților în DB); istoricul `plati` din DB rămâne intact.
   if (typeof window !== 'undefined') {
     try { localStorage.removeItem(`kineto_plati_${id}`); } catch (e) {}
   }
 
-  const { error } = await (supabase as any)
-    .from('pacienti')
-    .update({
-      sedinte_total: nextTotal,
-      sedinte_folosite: 0,
-      cost: nextCost,
-      status_abonament: 'activ',
-      achitat: isAchitat
-    })
-    .eq('id', id);
+  // Totul (pachet nou + plata inițială) se face într-o singură tranzacție în DB.
+  // Contorul de ședințe nu se mai resetează direct din client — scrierea lui
+  // `sedinte_folosite` este blocată de triggerul `trg_protejeaza_contor`.
+  const { error } = await (supabase as any).rpc('renew_subscription', {
+    p_pacient_id: id,
+    p_total: nextTotal,
+    p_cost: nextCost,
+    p_paid: amountToAdd,
+    p_status: pStatus,
+  });
 
-  if (error) throw new Error('Eroare la reînnoirea abonamentului: ' + error.message);
-  
-  if (amountToAdd > 0) {
-    await addPayment(id, amountToAdd, isAchitat);
-  }
-  
+  if (error) throw new Error(error.message || 'Eroare la reînnoirea abonamentului');
+
   clearRenewalDismissal(id);
 }
 

@@ -15,6 +15,7 @@
  *  - triggerul `trg_incrementeaza_sedinte` (finalizat → +1 sedinte_folosite)
  *  - triggerul de status abonament (activ / ultima_sedinta / terminat)
  *  - rpc('arhiveaza_saptamana')
+ *  - rpc('record_payment') / rpc('renew_subscription') — ca în DB-ul real
  */
 import { DEMO_USER_ID } from './config';
 
@@ -328,9 +329,127 @@ function applyMutation(store: DemoStore, table: string, ops: Op[]): any[] {
 // ── rpc('arhiveaza_saptamana') ────────────────────────────────
 
 export function runDemoRpc(fn: string, args: any): ExecResult {
-  if (fn !== 'arhiveaza_saptamana') {
-    return { data: null, error: { message: `Funcția demo necunoscută: ${fn}` } };
+  switch (fn) {
+    case 'arhiveaza_saptamana':
+      return demoArhiveazaSaptamana(args);
+    case 'record_payment':
+      return demoRecordPayment(args);
+    case 'renew_subscription':
+      return demoRenewSubscription(args);
+    default:
+      return { data: null, error: { message: `Funcția demo necunoscută: ${fn}` } };
   }
+}
+
+// rpc('record_payment') — oglindă a funcției din DB: inserează plata și
+// recalculează `achitat` pentru pachetul CURENT (plățile de la abonament_start;
+// pacienții fără abonament_start = legacy, toată istoria contează).
+function demoRecordPayment(args: any): ExecResult {
+  const store = loadStore();
+  const pacientId = args?.p_pacient_id;
+  const suma = Number(args?.p_suma ?? 0);
+  const markAchitat = !!args?.p_mark_achitat;
+
+  const pacienti = store.tables['pacienti'] || [];
+  const p = pacienti.find((x) => x.id === pacientId);
+  if (!p) return { data: null, error: { message: 'Pacient invalid sau neautorizat.' } };
+
+  const today = dateStr(new Date());
+  if (suma > 0) {
+    const plati = store.tables['plati'] || (store.tables['plati'] = []);
+    plati.push({
+      id: uuid(),
+      user_id: DEMO_USER_ID,
+      pacient_id: pacientId,
+      suma,
+      data_platii: today,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  const platiPacient = (store.tables['plati'] || []).filter((pl) => pl.pacient_id === pacientId);
+  const inPackage = p.abonament_start
+    ? platiPacient.filter((pl) => pl.data_platii >= p.abonament_start)
+    : platiPacient;
+  const total = inPackage.reduce((s, pl) => s + (pl.suma || 0), 0);
+
+  p.achitat = markAchitat || ((p.cost ?? 0) > 0 && total >= p.cost);
+  Object.assign(p, withDerivedPacientiFields(p));
+  p.updated_at = new Date().toISOString();
+
+  saveStore(store);
+  return { data: null, error: null };
+}
+
+// rpc('renew_subscription') — oglindă a funcției din DB: reînnoire ATOMICĂ care
+// NU șterge din plati și NU resetează contorul; la pachet epuizat în noul pachet
+// se poartă doar ședințele livrate peste plafonul anterior.
+function demoRenewSubscription(args: any): ExecResult {
+  const store = loadStore();
+  const pacientId = args?.p_pacient_id;
+  const pTotal = Number(args?.p_total ?? 10);
+  const pCost = Number(args?.p_cost ?? 0);
+  const pPaid = Number(args?.p_paid ?? 0);
+  const pStatus = String(args?.p_status ?? 'Neachitat');
+
+  const pacienti = store.tables['pacienti'] || [];
+  const p = pacienti.find((x) => x.id === pacientId);
+  if (!p) return { data: null, error: { message: 'Pacient invalid sau neautorizat.' } };
+
+  const finalizate = (store.tables['programari'] || [])
+    .filter((pr) => pr.pacient_id === pacientId && pr.status === 'finalizat')
+    .sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : String(a.ora ?? '').localeCompare(String(b.ora ?? ''))));
+
+  const oldTotal = Math.max(1, p.sedinte_total ?? 0);
+  const nAll = finalizate.length;
+  const start: string | null = p.abonament_start ?? null;
+
+  let newUsed: number;
+  let newStart: string | null;
+  if ((p.sedinte_folosite ?? 0) >= oldTotal) {
+    // Pachet EPUIZAT: pachet nou; se poartă excesul de ședințe (datoria)
+    const n = start ? finalizate.filter((pr) => pr.data >= start).length : nAll;
+    newUsed = Math.max(0, n - oldTotal);
+    newStart = newUsed > 0 ? finalizate[nAll - newUsed].data : dateStr(new Date());
+  } else {
+    // Pachet NEEPUIZAT: reînnoirea confirmă plata pe pachetul curent;
+    // contorul NU se resetează — se aduce la realitate cu ședințele livrate
+    if (start) {
+      const n = finalizate.filter((pr) => pr.data >= start).length;
+      newUsed = Math.max(p.sedinte_folosite ?? 0, n);
+      newStart = start;
+    } else {
+      newUsed = p.sedinte_folosite ?? 0; // legacy: fără dată de start
+      newStart = null;
+    }
+  }
+
+  const nextTotal = Math.max(1, pTotal);
+  p.sedinte_total = nextTotal;
+  p.sedinte_folosite = Math.min(newUsed, nextTotal);
+  p.cost = Math.max(0, pCost);
+  p.achitat = pStatus === 'Achitat';
+  p.abonament_start = newStart;
+  p.updated_at = new Date().toISOString();
+  Object.assign(p, withDerivedPacientiFields(p));
+
+  if (pPaid > 0) {
+    const plati = store.tables['plati'] || (store.tables['plati'] = []);
+    plati.push({
+      id: uuid(),
+      user_id: DEMO_USER_ID,
+      pacient_id: pacientId,
+      suma: pPaid,
+      data_platii: dateStr(new Date()),
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  saveStore(store);
+  return { data: null, error: null };
+}
+
+function demoArhiveazaSaptamana(args: any): ExecResult {
   const store = loadStore();
   const startParam: string | null = args?.saptamana_start ?? null;
 
