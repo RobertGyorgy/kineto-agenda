@@ -730,7 +730,7 @@ Astro.response.headers.set('Cache-Control', 'private, max-age=30, must-revalidat
 
         for (const [tKey, sameTimeList] of byTime) {
           if (sameTimeList.length > 1) {
-            const autoGroupId = `time_group_${sameTimeList[0].selectedDate || selectedDate}_${tKey}`;
+            const autoGroupId = `time_group_${sameTimeList[0].selectedDate || 'nodate'}_${tKey}`;
             groups.set(autoGroupId, sameTimeList);
           } else {
             trueSingles.push(sameTimeList[0]);

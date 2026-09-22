@@ -3,7 +3,7 @@
  * Folosit în: ReportsView.astro
  */
 import { supabase, getCurrentUser } from '../supabase';
-import type { IstericSaptamanal } from '../database.types';
+import type { IstoricSaptamanal } from '../database.types';
 import { toLocalISOString } from '../../utils/date';
 
 interface PaymentRecord {
