@@ -1,10 +1,17 @@
 ---
+import { createSupabaseServerClient } from '../lib/supabaseServer';
 import { ROUTES } from '../lib/constants';
 
-// Gateway logic: Simulated check for user session
-const isAuthenticated = true;
+let user = null;
+try {
+  const supabase = createSupabaseServerClient(Astro.cookies, Astro.request.headers);
+  const { data } = await supabase.auth.getUser();
+  user = data?.user || null;
+} catch {
+  user = null;
+}
 
-if (isAuthenticated) {
+if (user) {
   return Astro.redirect(ROUTES.DASHBOARD);
 } else {
   return Astro.redirect(ROUTES.LOGIN);
