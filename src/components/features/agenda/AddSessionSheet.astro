@@ -28,8 +28,19 @@ while (upcomingDates.length < 14 && dayCounter < 30) {
     <div id="add-session-drag-handle" class="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6 shrink-0 cursor-grab active:cursor-grabbing"></div>
 
     <div class="flex-1 overflow-y-auto px-1 pb-28">
-      <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center justify-between mb-6">
         <h3 id="sheet-title" class="text-2xl font-extrabold tracking-tight text-black">Programare nouă</h3>
+        <button
+          type="button"
+          id="close-add-session-btn"
+          class="w-10 h-10 rounded-full bg-black/5 hover:bg-black/10 active:scale-95 flex items-center justify-center text-black/70 hover:text-black transition-all cursor-pointer"
+          title="Închide / Înapoi"
+          aria-label="Închide"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
       </div>
 
       <form id="add-session-form" class="space-y-7">
@@ -1287,8 +1298,20 @@ while (upcomingDates.length < 14 && dayCounter < 30) {
         this.bindHandleSwipe(dragHandle, () => (window as any).currentAddSessionSheetManager?.close());
       }
 
-      // Backdrop click closes the sheet
+      // Close button in header
+      const closeBtn = document.getElementById('close-add-session-btn');
+      closeBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        (window as any).currentAddSessionSheetManager?.close();
+      });
+
+      // Backdrop click/tap closes the sheet
       this.overlay?.addEventListener('click', () => (window as any).currentAddSessionSheetManager?.close());
+      this.overlay?.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        (window as any).currentAddSessionSheetManager?.close();
+      });
 
       // Bind submit handlers — route through the current manager so stale
       // instances after Astro view transitions don't handle submissions.
@@ -1363,8 +1386,10 @@ while (upcomingDates.length < 14 && dayCounter < 30) {
 
       // Remove closed state on the next frame so the browser actually animates
       requestAnimationFrame(() => {
+        this.sheet?.classList.remove('pointer-events-none');
         this.content?.classList.remove('translate-y-full');
         this.overlay?.classList.remove('opacity-0', 'pointer-events-none');
+        this.overlay?.classList.add('pointer-events-auto');
       });
     }
 
@@ -1377,9 +1402,11 @@ while (upcomingDates.length < 14 && dayCounter < 30) {
       this.closeDatePicker();
       this.closeCustomTimeModal();
 
+      this.sheet.classList.add('pointer-events-none');
       this.content.style.transform = '';
       this.content.classList.add('translate-y-full');
       this.overlay.classList.add('opacity-0', 'pointer-events-none');
+      this.overlay.classList.remove('pointer-events-auto');
       unlockBodyScroll();
 
       // Reset form and fully hide sheet after animation
