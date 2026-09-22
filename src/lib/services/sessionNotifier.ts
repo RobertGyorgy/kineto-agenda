@@ -92,19 +92,8 @@ export function initSessionNotifier() {
     }
   };
 
-  // Pe browsere moderne (iOS / Android / Desktop), cererea de permisiune necesită un gest utilizator (click / tap).
-  // Înregistrăm un handler one-time pe prima interacțiune dacă permisiunea este 'default'.
-  if ('Notification' in window && Notification.permission === 'default') {
-    const askPermissionOnFirstTouch = async () => {
-      document.removeEventListener('click', askPermissionOnFirstTouch);
-      document.removeEventListener('touchend', askPermissionOnFirstTouch);
-      document.removeEventListener('touchstart', askPermissionOnFirstTouch);
-      await requestNotificationPermission();
-    };
-    document.addEventListener('click', askPermissionOnFirstTouch, { once: true });
-    document.addEventListener('touchend', askPermissionOnFirstTouch, { once: true });
-    document.addEventListener('touchstart', askPermissionOnFirstTouch, { once: true });
-  }
+  // Notificările se cer doar la cererea explicită a utilizatorului din Setări,
+  // nu mai cerem permisiune automat pe prima atingere/deschidere a aplicației.
 
   // La pornirea/revenirea în app: deschide popup-ul de confirmare pentru ședințele de azi
   // trecute neconfirmate. Nu mai re-promptăm sesiuni istorice la fiecare deschidere.

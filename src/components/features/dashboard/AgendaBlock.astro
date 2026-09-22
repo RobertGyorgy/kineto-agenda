@@ -301,7 +301,7 @@
                   rel="noopener noreferrer"
                   class="w-9 h-9 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 flex items-center justify-center active:scale-95 transition-all cursor-pointer shadow-2xs"
                   title="Deschide Dosar/Drive"
-                  onclick="event.stopPropagation(); if (!${hasDriveLink}) { event.preventDefault(); if (window.showToast) { window.showToast('Pacientul nu are dosar/Drive salvat.', 'info'); } else { alert('Pacientul nu are dosar/Drive salvat.'); } }"
+                  onclick="event.stopPropagation(); if (!${hasDriveLink}) { event.preventDefault(); window.showToast?.('Pacientul nu are dosar/Drive salvat.', 'info'); }"
                 >
                   <svg class="w-4 h-4 text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -640,7 +640,7 @@
                         </svg>
                       </a>
 
-                      <a href="${safeDriveLink}" target="${hasDriveLink ? '_blank' : '_self'}" rel="noopener noreferrer" class="w-11 h-11 rounded-2xl bg-white hover:bg-neutral-50 border border-transparent shadow-sm active:scale-95 transition-all flex items-center justify-center text-black cursor-pointer" title="Deschide Dosar/Drive" onclick="event.stopPropagation(); if (!${hasDriveLink}) { event.preventDefault(); if (window.showToast) { window.showToast('Pacientul nu are un link de dosar/Drive salvat.', 'info'); } else { alert('Pacientul nu are un link de dosar/Drive salvat.'); } }">
+                      <a href="${safeDriveLink}" target="${hasDriveLink ? '_blank' : '_self'}" rel="noopener noreferrer" class="w-11 h-11 rounded-2xl bg-white hover:bg-neutral-50 border border-transparent shadow-sm active:scale-95 transition-all flex items-center justify-center text-black cursor-pointer" title="Deschide Dosar/Drive" onclick="event.stopPropagation(); if (!${hasDriveLink}) { event.preventDefault(); window.showToast?.('Pacientul nu are un link de dosar/Drive salvat.', 'info'); }">
                         <svg class="w-5 h-5 text-black opacity-85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
@@ -804,16 +804,7 @@
       const nowM = parseInt(nowStr.split(':')[1], 10);
       const nowTotalMin = nowH * 60 + nowM;
       
-      // Auto prompt if the session ended within the last 3 minutes and wasn't prompted yet
-      if (nowTotalMin >= totalEndMin && nowTotalMin - totalEndMin <= 3 && !autoPromptedSessions.has(s.id)) {
-        autoPromptedSessions.add(s.id);
-        try {
-          sessionStorage.setItem('kineto_auto_prompted', JSON.stringify(Array.from(autoPromptedSessions)));
-        } catch {}
-        if (typeof (window as any).confirmSession === 'function') {
-          (window as any).confirmSession(s.id);
-        }
-      }
+      // Auto-prompt dezactivat: utilizatorul confirmă ședințele direct din card, fără pop-up-uri automate la deschidere.
 
       // Check if we need to re-render UI because of time changes (ongoing vs past)
       if (nowTotalMin === totalEndMin || nowTotalMin === totalStartMin) {
