@@ -184,70 +184,9 @@ function markFirstLaunchCompleted() {
 }
 
 // Deschide popup-ul de wrap-up pentru fiecare ședință de azi trecută neconfirmată.
-// La prima accesare/deschidere a aplicației, popup-ul automat este amânat pentru o primă impresie curată.
+// Dezactivat complet automat pentru a preveni blocarea ecranului. Utilizatorul confirmă prin apăsare directă pe card.
 async function promptMissedSessionWrapUp() {
-  if (typeof window === 'undefined') return;
-  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-
-  // Dacă este prima dată când utilizatorul deschide aplicația în această sesiune de browser,
-  // nu-l bombardăm cu pop-up-uri instantanee la prima secundă.
-  if (isFirstLaunchSession()) {
-    markFirstLaunchCompleted();
-    return;
-  }
-
-  try {
-    const pending = await getPendingWrapUps();
-    if (!pending || pending.length === 0) {
-      wrapUpQueue = [];
-      setQueuedWrapUpIds([]);
-      return;
-    }
-
-    const todayStr = toLocalISOString(new Date());
-    // Auto-prompt pentru ședințele neconfirmate de azi
-    const todayPending = pending.filter((a: any) => a.data === todayStr);
-    const ids = todayPending.map((a: any) => a.id).filter(Boolean);
-
-    const savedQueue = getQueuedWrapUpIds();
-    const currentQueue = savedQueue.filter((id) => ids.includes(id));
-
-    let promptedMap: Record<string, string> = {};
-    try {
-      promptedMap = JSON.parse(localStorage.getItem(WRAPUP_PROMPT_KEY) || '{}');
-    } catch {
-      // ignore
-    }
-
-    for (const id of ids) {
-      if (!currentQueue.includes(id) && promptedMap[id] !== todayStr) {
-        currentQueue.push(id);
-      }
-    }
-
-    wrapUpQueue = currentQueue;
-    setQueuedWrapUpIds(wrapUpQueue);
-
-    if (wrapUpQueue.length === 0 || wrapUpQueueActive) return;
-
-    const nextId = wrapUpQueue[0];
-    if (!nextId) return;
-
-    promptedMap[nextId] = todayStr;
-    try {
-      localStorage.setItem(WRAPUP_PROMPT_KEY, JSON.stringify(promptedMap));
-    } catch {
-      // ignore
-    }
-
-    const confirmSession = (window as any).confirmSession;
-    if (typeof confirmSession !== 'function') return;
-
-    wrapUpQueueActive = true;
-    confirmSession(nextId);
-  } catch (err) {
-    console.error('promptMissedSessionWrapUp error:', err);
-  }
+  return;
 }
 
 // Când utilizatorul închide un popup de wrap-up, afișează următorul din coadă.
@@ -405,17 +344,7 @@ async function checkTodaySessionsForNotifications() {
             summaryMessage += ` Ultima ședință a zilei.`;
           }
 
-          // Popup în app — deschide wrapup pentru prima sesiune din grup/individuală (doar în modul real)
-          if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-            const isDemo = await isDemoAccount();
-            if (!isDemo) {
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('openWrapUp', {
-                  detail: { appointment: item.appointments[0] }
-                }));
-              }, 500);
-            }
-          }
+
 
           if (canUseWebNotifications) {
             if (item.isGroup) {
