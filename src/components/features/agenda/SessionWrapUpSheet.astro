@@ -201,6 +201,7 @@
   import { getPatient, resetPatientSubscription } from '../../../lib/services/patientService';
   import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
   import { toLocalISOString } from '../../../utils/date';
+  import { isDemoSession } from '../../../lib/demo/guard';
 
   class WrapUpSheetManager {
     private sheet: HTMLElement | null;
@@ -999,7 +1000,8 @@
     // Only bind the window event listener once globally; route each open event
     // to the current manager so it survives Astro view transitions.
     if (!(window as any)._wrapUpWindowListenerBound) {
-      window.addEventListener('openWrapUp', (e: Event) => {
+      window.addEventListener('openWrapUp', async (e: Event) => {
+        if (await isDemoSession()) return; // cont demo: fără popup-uri
         (window as any).currentWrapUpSheetManager?.handleOpenEvent(e as CustomEvent);
       });
       (window as any)._wrapUpWindowListenerBound = true;

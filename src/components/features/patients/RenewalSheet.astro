@@ -139,6 +139,7 @@
   import { createAppointment } from '../../../lib/services/appointmentService';
   import { getSettings } from '../../../lib/services/settingsService';
   import { lockBodyScroll, unlockBodyScroll } from '../../../utils/scrollLock';
+  import { isDemoSession } from '../../../lib/demo/guard';
 
   class RenewalSheetManager {
     private sheet: HTMLElement | null = null;
@@ -609,7 +610,8 @@
 
   function initRenewalSheet() {
     if (!(window as any)._renewalSheetWindowListenerBound) {
-      window.addEventListener('openRenewalSheet', (e: Event) => {
+      window.addEventListener('openRenewalSheet', async (e: Event) => {
+        if (await isDemoSession()) return; // cont demo: fără popup-uri
         (window as any).currentRenewalSheetManager?.handleOpenEvent(e as CustomEvent);
       });
       (window as any)._renewalSheetWindowListenerBound = true;
