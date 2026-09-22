@@ -191,8 +191,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/favicon.svg',
-    badge: data.badge || '/favicon.svg',
+    icon: data.icon || '/favicon.png',
+    badge: data.badge || '/favicon.png',
     tag: data.tag || 'kineto-push-alert',
     data: { url: data.url || '/dashboard' },
     vibrate: [200, 100, 200]
