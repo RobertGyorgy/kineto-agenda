@@ -210,6 +210,10 @@ async function checkTodaySessionsForNotifications() {
   const canUseWebNotifications = 'Notification' in window && Notification.permission === 'granted';
 
   try {
+    const { supabase } = await import('../supabase');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     const [appts, settings] = await Promise.all([
       getAppointmentsByDate(todayStr),
       getSettings()
