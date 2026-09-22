@@ -192,6 +192,7 @@ if (typeof window !== 'undefined') {
 
 async function checkTodaySessionsForNotifications() {
   if (typeof window === 'undefined') return;
+  if (await isDemoAccount()) return; // cont demo: fără notificări native
 
   const now = new Date();
   const todayStr = toLocalISOString(now);
