@@ -19,14 +19,23 @@ if (typeof globalThis !== 'undefined' && typeof (globalThis as any).WebSocket ==
   }
 }
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PUBLIC_SUPABASE_URL) ||
+  (typeof process !== 'undefined' && process.env ? process.env.PUBLIC_SUPABASE_URL : '') ||
+  '';
+const supabaseKey =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PUBLIC_SUPABASE_ANON_KEY) ||
+  (typeof process !== 'undefined' && process.env ? process.env.PUBLIC_SUPABASE_ANON_KEY : '') ||
+  '';
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('❌ Lipsesc variabilele de mediu Supabase. Verifică fișierul .env');
+  console.warn('⚠️ Lipsesc variabilele de mediu Supabase (PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY).');
 }
 
-const realClient = createBrowserClient<Database>(supabaseUrl, supabaseKey);
+const realClient = createBrowserClient<Database>(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseKey || 'placeholder'
+);
 
 // Cont demo: același client, dar `from()`/`rpc()` sunt rulate local
 // (localStorage) când sesiunea aparține contului demo.

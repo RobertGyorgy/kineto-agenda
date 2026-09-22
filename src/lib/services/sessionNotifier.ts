@@ -151,11 +151,50 @@ function setQueuedWrapUpIds(ids: string[]) {
   }
 }
 
-// Deschide popup-ul de wrap-up pentru fiecare ședință de azi trecută neconfirmată,
-// una câte una. Când una se închide, următoarea din coadă este afișată.
+async function isDemoAccount(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const { DEMO_USER_ID, DEMO_EMAIL } = await import('../demo/config');
+    const { supabase } = await import('../supabase');
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.id === DEMO_USER_ID || session?.user?.email === DEMO_EMAIL;
+  } catch {
+    return false;
+  }
+}
+
+const FIRST_LAUNCH_KEY = 'kineto_app_first_launch_completed';
+
+function isFirstLaunchSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return !sessionStorage.getItem(FIRST_LAUNCH_KEY);
+  } catch {
+    return false;
+  }
+}
+
+function markFirstLaunchCompleted() {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(FIRST_LAUNCH_KEY, 'true');
+  } catch {
+    // ignore
+  }
+}
+
+// Deschide popup-ul de wrap-up pentru fiecare ședință de azi trecută neconfirmată.
+// La prima accesare/deschidere a aplicației, popup-ul automat este amânat pentru o primă impresie curată.
 async function promptMissedSessionWrapUp() {
   if (typeof window === 'undefined') return;
   if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+
+  // Dacă este prima dată când utilizatorul deschide aplicația în această sesiune de browser,
+  // nu-l bombardăm cu pop-up-uri instantanee la prima secundă.
+  if (isFirstLaunchSession()) {
+    markFirstLaunchCompleted();
+    return;
+  }
 
   try {
     const pending = await getPendingWrapUps();
@@ -166,16 +205,13 @@ async function promptMissedSessionWrapUp() {
     }
 
     const todayStr = toLocalISOString(new Date());
-    // Auto-prompt doar pentru ședințele de azi. Sesiunile mai vechi rămân vizibile în calendar,
-    // dar nu mai blochează experiența la fiecare deschidere a aplicației.
+    // Auto-prompt pentru ședințele neconfirmate de azi
     const todayPending = pending.filter((a: any) => a.data === todayStr);
     const ids = todayPending.map((a: any) => a.id).filter(Boolean);
 
-    // Păstrează doar ID-urile care mai sunt în pending (elimină cele rezolvate).
     const savedQueue = getQueuedWrapUpIds();
     const currentQueue = savedQueue.filter((id) => ids.includes(id));
 
-    // Adaugă în coadă ședințele noi care nu au fost deja promptuite azi.
     let promptedMap: Record<string, string> = {};
     try {
       promptedMap = JSON.parse(localStorage.getItem(WRAPUP_PROMPT_KEY) || '{}');
@@ -197,12 +233,11 @@ async function promptMissedSessionWrapUp() {
     const nextId = wrapUpQueue[0];
     if (!nextId) return;
 
-    // Marchează ID-ul ca fiind deja auto-promptuit azi.
     promptedMap[nextId] = todayStr;
     try {
       localStorage.setItem(WRAPUP_PROMPT_KEY, JSON.stringify(promptedMap));
     } catch {
-      // ignore localStorage errors
+      // ignore
     }
 
     const confirmSession = (window as any).confirmSession;
@@ -370,13 +405,16 @@ async function checkTodaySessionsForNotifications() {
             summaryMessage += ` Ultima ședință a zilei.`;
           }
 
-          // Popup în app — deschide wrapup pentru prima sesiune din grup/individuală
+          // Popup în app — deschide wrapup pentru prima sesiune din grup/individuală (doar în modul real)
           if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('openWrapUp', {
-                detail: { appointment: item.appointments[0] }
-              }));
-            }, 500);
+            const isDemo = await isDemoAccount();
+            if (!isDemo) {
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('openWrapUp', {
+                  detail: { appointment: item.appointments[0] }
+                }));
+              }, 500);
+            }
           }
 
           if (canUseWebNotifications) {

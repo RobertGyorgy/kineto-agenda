@@ -53,6 +53,13 @@ export async function subscribeToPushNotifications(): Promise<{ success: boolean
     // 2. Așteaptă Service Worker-ul activ
     const reg = await navigator.serviceWorker.ready;
 
+    if (!VAPID_PUBLIC_KEY || !VAPID_PUBLIC_KEY.trim()) {
+      return {
+        success: false,
+        message: 'Notificările Push nu sunt configurate în Vercel (lipsește PUBLIC_VAPID_PUBLIC_KEY).'
+      };
+    }
+
     // 3. Verifică dacă există deja un abonament vechi sau creează unul nou
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {

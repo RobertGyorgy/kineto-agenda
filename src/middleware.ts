@@ -16,11 +16,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return next();
   }
 
-  // Check session server-side
-  const supabase = createSupabaseServerClient(cookies, request.headers);
-  const { data: { user }, error } = await supabase.auth.getUser();
+  try {
+    // Check session server-side
+    const supabase = createSupabaseServerClient(cookies, request.headers);
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !user) {
+    if (error || !user) {
+      return redirect('/login');
+    }
+  } catch (err) {
+    console.warn('Auth check skipped / error in middleware:', err);
     return redirect('/login');
   }
 
