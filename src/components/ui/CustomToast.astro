@@ -150,9 +150,8 @@
     const okBtn = document.getElementById('confirm-modal-ok');
 
     if (!overlay || !card) {
-      const fallback = confirm(`${title}\n\n${message}`);
-      if (fallback && onConfirm) onConfirm();
-      return Promise.resolve(fallback);
+      // Modal elements not found — silently resolve false (no native confirm fallback)
+      return Promise.resolve(false);
     }
 
     // Guard against overlapping showConfirm() calls: close any already-open modal
