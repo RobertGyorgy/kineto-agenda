@@ -106,7 +106,7 @@
           } else {
             (window as any).showToast?.(res.message || 'Eroare la activare.', 'error');
             if (res.message && res.message.includes('refuzată')) {
-              alert('Pentru a primi notificări pe iPhone/Safari: Mergi în Configurări (Settings) -> Notificări -> KinetoAgenda și activează Permite Notificări.');
+              (window as any).showToast?.('Pentru a primi notificări pe iPhone: Mergi în Configurări → Notificări → KinetoAgenda și activează Permite Notificări.', 'info');
             }
           }
         } catch (e) {
@@ -841,7 +841,8 @@
   (window as any).deleteGroupSession = async (groupId: string, memberIdsRaw: string) => {
     const ids = (memberIdsRaw || '').split(',').filter(Boolean);
     if (ids.length === 0) return;
-    if (!window.confirm('Sigur ștergi ședința în grup pentru toți pacienții?')) return;
+    const confirmed = await (window as any).showConfirm('Ștergere grup', 'Sigur ștergi ședința în grup pentru toți pacienții?');
+    if (!confirmed) return;
     try {
       await Promise.all(ids.map(id => deleteAppointment(id)));
       (window as any).showToast?.('Ședința în grup a fost ștearsă.', 'info');

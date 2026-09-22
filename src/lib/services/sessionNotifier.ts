@@ -88,7 +88,7 @@ export function initSessionNotifier() {
     if (granted) {
       await triggerWebNotification('🔔 Test Notificare', 'Notificările funcționează perfect pe acest dispozitiv!');
     } else {
-      alert('Permisiunea pentru notificări este oprită în browser. Te rog să o activezi din setările browserului.');
+      (window as any).showToast?.('Permisiunea pentru notificări este oprită în browser. Te rog să o activezi din setările browserului.', 'warning');
     }
   };
 

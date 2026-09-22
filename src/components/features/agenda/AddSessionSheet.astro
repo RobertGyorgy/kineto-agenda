@@ -1005,8 +1005,9 @@ while (upcomingDates.length < 14 && dayCounter < 30) {
 
       const isLunchOverlap = (sessionStartMin < lunchEndMin) && (sessionEndMin > lunchStartMin);
       if (isLunchOverlap) {
-        const proceed = window.confirm(
-          `Ora ${selectedTime} se suprapune cu pauza de masă (${lunchStart} - ${lunchEnd}).\n\nDorești să programezi oricum?`
+        const proceed = await (window as any).showConfirm(
+          'Suprapunere pauză masă',
+          `Ora ${selectedTime} se suprapune cu pauza de masă (${lunchStart} - ${lunchEnd}). Dorești să programezi oricum?`
         );
         if (!proceed) return;
       }

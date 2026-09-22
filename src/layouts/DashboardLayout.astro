@@ -769,7 +769,8 @@ const { title, hideDock = false } = Astro.props;
         (window as any).deleteGroupSession = async (memberIds: string) => {
           const ids = (memberIds || '').split(',').filter(Boolean);
           if (ids.length === 0) return;
-          if (!window.confirm('Sigur ștergi ședința în grup pentru toți pacienții?')) return;
+          const confirmed = await (window as any).showConfirm('Ștergere grup', 'Sigur ștergi ședința în grup pentru toți pacienții?');
+          if (!confirmed) return;
           try {
             await Promise.all(ids.map(id => deleteAppointment(id)));
             (window as any).showToast('Ședința în grup a fost ștearsă.', 'info');

@@ -738,7 +738,7 @@ const currentSectionInfo = section && sectionTitles[section] ? sectionTitles[sec
         } else {
           showToast(res.message || 'Eroare la activare.', 'error');
           if (res.message && res.message.includes('refuzată')) {
-            alert('Pentru a primi notificări pe iPhone: Mergi în Configurări (Settings) -> Notificări -> KinetoAgenda și activează Permite Notificări.');
+            showToast('Pentru a primi notificări pe iPhone: Mergi în Configurări → Notificări → KinetoAgenda și activează Permite Notificări.', 'info');
           }
         }
       } catch (err: any) {
